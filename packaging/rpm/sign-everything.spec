@@ -42,7 +42,7 @@ install -m 0644 packaging/sign-everything.png %{buildroot}%{_datadir}/icons/hico
 
 %files
 %license LICENSE
-%doc README.md THIRD_PARTY_NOTICES.md
+%doc README.md
 %{_bindir}/sign-everything
 %{_datadir}/sign-everything/Sign-everything.py
 %{_datadir}/applications/sign-everything.desktop

@@ -197,9 +197,6 @@ PIN сохраняется **только после первого успешн
 Sign Everything распространяется по **GNU General Public License v3.0**
 (`GPL-3.0-only`). Полный текст — в файле [LICENSE](LICENSE).
 
-Сведения о PyQt5, cryptography, Python и КриптоПро CSP — в
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
 ## Автор
 
 Дмитрий Петровский

@@ -30,7 +30,6 @@ install -m 0644 packaging/sign-everything.desktop "$STAGE/usr/share/applications
 install -m 0644 packaging/sign-everything.png "$STAGE/usr/share/icons/hicolor/256x256/apps/sign-everything.png"
 
 install -m 0644 README.md "$STAGE/usr/share/doc/sign-everything/README.md"
-install -m 0644 THIRD_PARTY_NOTICES.md "$STAGE/usr/share/doc/sign-everything/THIRD_PARTY_NOTICES.md"
 install -m 0644 LICENSE "$STAGE/usr/share/doc/sign-everything/LICENSE"
 gzip -9n -c packaging/deb/changelog > "$STAGE/usr/share/doc/sign-everything/changelog.gz"
 

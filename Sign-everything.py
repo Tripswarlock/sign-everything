@@ -79,7 +79,6 @@ APP_AUTHOR_URL = "https://github.com/Tripswarlock"
 APP_EMAIL = "crashday_game@mail.ru"
 APP_LICENSE = "GNU General Public License v3.0"
 APP_LICENSE_URL = APP_REPOSITORY + "/blob/main/LICENSE"
-APP_THIRD_PARTY_URL = APP_REPOSITORY + "/blob/main/THIRD_PARTY_NOTICES.md"
 PIN_SERVICE = "sign-everything"
 PIN_ACCOUNT = "signing-pin"
 
@@ -1037,7 +1036,6 @@ class AboutDialog(QDialog):
             ("Почта", APP_EMAIL, "mailto:" + APP_EMAIL),
             ("Репозиторий", "github.com/Tripswarlock/sign-everything", APP_REPOSITORY),
             ("Страница проекта", "tripswarlock.github.io", APP_WEBSITE),
-            ("3rd party", "THIRD_PARTY_NOTICES.md", APP_THIRD_PARTY_URL),
             ("Лицензия", APP_LICENSE, APP_LICENSE_URL),
         ]
         for row, (caption, text, url) in enumerate(rows):
@@ -1059,8 +1057,6 @@ class AboutDialog(QDialog):
 
         note = QLabel(
             "Это свободное программное обеспечение под GNU GPL v3.0. "
-            "PyQt5 распространяется по GPLv3 или коммерческой лицензии; "
-            "Cryptography — по Apache 2.0/BSD. КриптоПро CSP в состав пакета не входит. "
             "© 2026 Tripswarlock."
         )
         note.setObjectName("AboutNote")
@@ -1304,10 +1300,10 @@ class MainWindow(QMainWindow):
         pin_row = QHBoxLayout()
         pin_row.setSpacing(7)
         pin_row.addWidget(self.pin_edit)
+        pin_row.addStretch(1)
         pin_row.addWidget(self.eye_btn)
         pin_row.addWidget(self.remember_check)
         pin_row.addWidget(self.forget_btn)
-        pin_row.addStretch(1)
         grid.addLayout(pin_row, 1, 1, 1, 4)
 
         self.pin_status = QLabel("PIN не сохраняется в открытом виде")

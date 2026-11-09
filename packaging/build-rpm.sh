@@ -28,7 +28,7 @@ mkdir -p "$DIST" "$DIST/rpm"
 
 SRC="$STAGE/sign-everything-$VERSION"
 mkdir -p "$SRC"
-cp Sign-everything.py README.md LICENSE THIRD_PARTY_NOTICES.md "$SRC/"
+cp Sign-everything.py README.md LICENSE "$SRC/"
 cp -a packaging "$SRC/packaging"
 tar -czf "$DIST/sign-everything-$VERSION.tar.gz" -C "$STAGE" "sign-everything-$VERSION"
 
