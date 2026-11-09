@@ -123,7 +123,20 @@ class CertificateInfo:
         text = self.cn or self.subject
         if self.email:
             text += f"  ·  {self.email}"
+        if self.expired:
+            text += "  ·  просрочен"
         return text
+
+    @property
+    def expired(self) -> bool:
+        if not self.not_after:
+            return False
+        try:
+            return datetime.strptime(
+                self.not_after, "%m/%d/%Y %H:%M:%S UTC"
+            ) < datetime.utcnow()
+        except ValueError:
+            return False
 
     @property
     def tooltip(self) -> str:
@@ -134,6 +147,8 @@ class CertificateInfo:
             parts.append(f"Контейнер: {self.container}")
         if self.not_after:
             parts.append(f"Действителен до: {self.not_after}")
+        if self.expired:
+            parts.append("Статус: срок действия истёк")
         return "\n".join(parts)
 
     @property
@@ -1253,13 +1268,12 @@ class MainWindow(QMainWindow):
         grid.addWidget(pin_label, 1, 0)
 
         self.pin_edit = QLineEdit()
-        self.pin_edit.setPlaceholderText("Введите PIN-код носителя")
+        self.pin_edit.setPlaceholderText("Введите PIN-код")
         self.pin_edit.setEchoMode(QLineEdit.Password)
         self.pin_edit.setMinimumHeight(30)
-        self.pin_edit.setMinimumWidth(140)
+        self.pin_edit.setFixedWidth(152)
         self.pin_edit.textEdited.connect(self._on_pin_edited)
         self.pin_edit.returnPressed.connect(self.start_signing)
-        grid.addWidget(self.pin_edit, 1, 1)
 
         self.eye_btn = QPushButton("Показать")
         self.eye_btn.setObjectName("Ghost")
@@ -1268,7 +1282,6 @@ class MainWindow(QMainWindow):
         self.eye_btn.setFixedWidth(60)
         self.eye_btn.setMinimumHeight(30)
         self.eye_btn.toggled.connect(self._toggle_pin_visibility)
-        grid.addWidget(self.eye_btn, 1, 2)
 
         self.remember_check = QCheckBox("Запомнить PIN")
         self.remember_check.setToolTip(
@@ -1281,14 +1294,21 @@ class MainWindow(QMainWindow):
             self.remember_check.setToolTip(
                 "Установите python3-cryptography или настройте системный keyring."
             )
-        grid.addWidget(self.remember_check, 1, 3)
 
         self.forget_btn = QPushButton("Забыть")
         self.forget_btn.setObjectName("Link")
         self.forget_btn.setCursor(Qt.PointingHandCursor)
         self.forget_btn.setToolTip("Удалить сохранённый PIN и очистить поле")
         self.forget_btn.clicked.connect(self._forget_pin)
-        grid.addWidget(self.forget_btn, 1, 4)
+
+        pin_row = QHBoxLayout()
+        pin_row.setSpacing(7)
+        pin_row.addWidget(self.pin_edit)
+        pin_row.addWidget(self.eye_btn)
+        pin_row.addWidget(self.remember_check)
+        pin_row.addWidget(self.forget_btn)
+        pin_row.addStretch(1)
+        grid.addLayout(pin_row, 1, 1, 1, 4)
 
         self.pin_status = QLabel("PIN не сохраняется в открытом виде")
         self.pin_status.setObjectName("PinStatus")
@@ -1567,7 +1587,9 @@ class MainWindow(QMainWindow):
         preferred = previous or self.settings.value("cert_cn", "", type=str)
         self.cert_combo.blockSignals(True)
         self.cert_combo.clear()
-        selected_index = 0
+        selected_index = next(
+            (index for index, cert in enumerate(certs) if not cert.expired), 0
+        )
         for index, cert in enumerate(certs):
             self.cert_combo.addItem(cert.display, cert.cn)
             self.cert_combo.setItemData(index, cert.tooltip, Qt.ToolTipRole)
@@ -1581,7 +1603,9 @@ class MainWindow(QMainWindow):
             self._set_token_badge("Токен подключён", "ok")
         else:
             self._set_token_badge("Сертификат найден", "ok")
-        self._append_log(f"Найдено сертификатов: {len(certs)}.")
+        expired_count = sum(1 for cert in certs if cert.expired)
+        suffix = f" (просрочено: {expired_count})" if expired_count else ""
+        self._append_log(f"Найдено сертификатов: {len(certs)}{suffix}.")
         self._on_cert_changed(selected_index)
         self._update_sign_enabled()
 
