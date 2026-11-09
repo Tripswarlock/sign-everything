@@ -34,6 +34,8 @@ from PyQt5.QtGui import (
     QFontMetrics,
     QIcon,
     QPainter,
+    QPainterPath,
+    QPen,
     QPixmap,
     QTextOption,
 )
@@ -748,6 +750,37 @@ def make_app_icon() -> QIcon:
     return QIcon(pixmap)
 
 
+def make_eye_icon(visible: bool) -> QIcon:
+    """Рисует глаз без внешних ресурсов: открытый или перечёркнутый."""
+    pixmap = QPixmap(36, 36)
+    pixmap.fill(Qt.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.Antialiasing)
+
+    pen = QPen(QColor("#40536C"), 2.1)
+    pen.setCapStyle(Qt.RoundCap)
+    pen.setJoinStyle(Qt.RoundJoin)
+    painter.setPen(pen)
+    painter.setBrush(Qt.NoBrush)
+
+    eye = QPainterPath()
+    eye.moveTo(3, 18)
+    eye.cubicTo(8, 8, 28, 8, 33, 18)
+    eye.cubicTo(28, 28, 8, 28, 3, 18)
+    painter.drawPath(eye)
+
+    painter.setPen(Qt.NoPen)
+    painter.setBrush(QColor("#40536C"))
+    painter.drawEllipse(12, 12, 12, 12)
+
+    if not visible:
+        painter.setPen(pen)
+        painter.drawLine(6, 6, 30, 30)
+
+    painter.end()
+    return QIcon(pixmap)
+
+
 # ---------------------------------------------------------------------------
 # Главное окно
 # ---------------------------------------------------------------------------
@@ -916,6 +949,14 @@ QPushButton#Danger:hover { background: #FFE7EA; }
 QPushButton#Danger:disabled {
     background: #F7F8FA; color: #B6C0CD; border-color: #E6EAF0;
 }
+QPushButton#EyeButton {
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    padding: 0;
+}
+QPushButton#EyeButton:hover { background: #EEF4FF; }
+QPushButton#EyeButton:checked { background: #EAF1FF; }
 QPushButton#Ghost {
     background: transparent;
     color: #5E7089;
@@ -1271,12 +1312,15 @@ class MainWindow(QMainWindow):
         self.pin_edit.textEdited.connect(self._on_pin_edited)
         self.pin_edit.returnPressed.connect(self.start_signing)
 
-        self.eye_btn = QPushButton("Показать")
-        self.eye_btn.setObjectName("Ghost")
+        self.eye_btn = QPushButton()
+        self.eye_btn.setObjectName("EyeButton")
         self.eye_btn.setCheckable(True)
         self.eye_btn.setCursor(Qt.PointingHandCursor)
-        self.eye_btn.setFixedWidth(60)
-        self.eye_btn.setMinimumHeight(30)
+        self.eye_btn.setFixedSize(30, 30)
+        self.eye_btn.setIcon(make_eye_icon(False))
+        self.eye_btn.setIconSize(QSize(22, 22))
+        self.eye_btn.setToolTip("Показать PIN")
+        self.eye_btn.setAccessibleName("Показать PIN")
         self.eye_btn.toggled.connect(self._toggle_pin_visibility)
 
         self.remember_check = QCheckBox("Запомнить PIN")
@@ -1300,8 +1344,8 @@ class MainWindow(QMainWindow):
         pin_row = QHBoxLayout()
         pin_row.setSpacing(7)
         pin_row.addWidget(self.pin_edit)
-        pin_row.addStretch(1)
         pin_row.addWidget(self.eye_btn)
+        pin_row.addStretch(1)
         pin_row.addWidget(self.remember_check)
         pin_row.addWidget(self.forget_btn)
         grid.addLayout(pin_row, 1, 1, 1, 4)
@@ -1500,7 +1544,9 @@ class MainWindow(QMainWindow):
 
     def _toggle_pin_visibility(self, visible: bool) -> None:
         self.pin_edit.setEchoMode(QLineEdit.Normal if visible else QLineEdit.Password)
-        self.eye_btn.setText("Скрыть" if visible else "Показать")
+        self.eye_btn.setIcon(make_eye_icon(visible))
+        self.eye_btn.setToolTip("Скрыть PIN" if visible else "Показать PIN")
+        self.eye_btn.setAccessibleName("Скрыть PIN" if visible else "Показать PIN")
 
     def _set_pin_status(self, text: str, state: str = "muted") -> None:
         self.pin_status.setText(text)
