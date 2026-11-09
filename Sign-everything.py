@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Tripswarlock
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Sign Everything 1.1.1 (Подпиши всё)
+Sign Everything 1.1.0 (Подпиши всё)
 
 Массовое подписание файлов отсоединённой подписью через КриптоПро CSP.
 Работает локально: файлы и PIN-код не покидают компьютер.
@@ -74,7 +74,7 @@ except Exception:  # pragma: no cover - зависит от окружения
 
 APP_NAME = "Sign Everything"
 APP_DISPLAY_NAME = "Подпиши всё"
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.1.0"
 APP_REPOSITORY = "https://github.com/Tripswarlock/sign-everything"
 APP_WEBSITE = "https://tripswarlock.github.io/"
 APP_AUTHOR = "Дмитрий Петровский"

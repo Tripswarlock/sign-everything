@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           sign-everything
-Version:        1.1.1
+Version:        1.1.0
 Release:        1
 Summary:        Mass file signing via CryptoPro CSP
 License:        GPL-3.0-only
@@ -49,7 +49,7 @@ install -m 0644 packaging/sign-everything.png %{buildroot}%{_datadir}/icons/hico
 %{_datadir}/icons/hicolor/256x256/apps/sign-everything.png
 
 %changelog
-* Mon Nov 09 2026 Dmitry Petrovsky <tripswarlock@gmail.com> - 1.1.1-1
+* Mon Nov 09 2026 Dmitry Petrovsky <tripswarlock@gmail.com> - 1.1.0-1
 - Name in menu and main window: "Подпиши всё".
 - New email in About dialog.
 - Compact vertical interface.
