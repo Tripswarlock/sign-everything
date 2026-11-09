@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Tripswarlock
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Sign Everything 2.0
+Sign Everything 1.1.1 (Подпиши всё)
 
 Массовое подписание файлов отсоединённой подписью через КриптоПро CSP.
 Работает локально: файлы и PIN-код не покидают компьютер.
@@ -73,12 +73,13 @@ except Exception:  # pragma: no cover - зависит от окружения
 
 
 APP_NAME = "Sign Everything"
-APP_VERSION = "1.1.0"
+APP_DISPLAY_NAME = "Подпиши всё"
+APP_VERSION = "1.1.1"
 APP_REPOSITORY = "https://github.com/Tripswarlock/sign-everything"
 APP_WEBSITE = "https://tripswarlock.github.io/"
 APP_AUTHOR = "Дмитрий Петровский"
 APP_AUTHOR_URL = "https://github.com/Tripswarlock"
-APP_EMAIL = "crashday_game@mail.ru"
+APP_EMAIL = "tripswarlock@gmail.com"
 APP_LICENSE = "GNU General Public License v3.0"
 APP_LICENSE_URL = APP_REPOSITORY + "/blob/main/LICENSE"
 PIN_SERVICE = "sign-everything"
@@ -1044,7 +1045,7 @@ class AboutDialog(QDialog):
 
         title_box = QVBoxLayout()
         title_box.setSpacing(1)
-        title = QLabel(APP_NAME)
+        title = QLabel(APP_DISPLAY_NAME)
         title.setObjectName("AboutTitle")
         version = QLabel(f"Версия {APP_VERSION}")
         version.setObjectName("AboutVersion")
@@ -1219,7 +1220,7 @@ class MainWindow(QMainWindow):
 
         text_layout = QVBoxLayout()
         text_layout.setSpacing(0)
-        title = QLabel(APP_NAME)
+        title = QLabel(APP_DISPLAY_NAME)
         title.setObjectName("BrandTitle")
         subtitle = QLabel("Подписание документов через КриптоПро CSP")
         subtitle.setObjectName("BrandSubtitle")
@@ -1951,7 +1952,7 @@ def main() -> int:
 
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
-    app.setApplicationDisplayName(APP_NAME)
+    app.setApplicationDisplayName(APP_DISPLAY_NAME)
     app.setOrganizationName("Tripswarlock")
     app.setFont(QFont("DejaVu Sans", 10))
     app.setWindowIcon(make_app_icon())

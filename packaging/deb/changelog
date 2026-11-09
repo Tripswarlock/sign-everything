@@ -1,5 +1,7 @@
-sign-everything (1.1.0) stable; urgency=medium
+sign-everything (1.1.1) stable; urgency=medium
 
+  * Название в меню и главном окне — «Подпиши всё».
+  * Новый адрес почты в окне «О программе».
   * Компактный вертикальный интерфейс.
   * Окно «О программе» с информацией об авторе и ссылками.
   * Лицензия GPL-3.0.
@@ -7,4 +9,4 @@ sign-everything (1.1.0) stable; urgency=medium
   * Запоминание PIN в keyring или зашифрованном локальном хранилище.
   * Подписание через cryptcp с передачей PIN через stdin.
 
- -- Dmitry Petrovsky <crashday_game@mail.ru>  Mon, 09 Nov 2026 15:40:00 +0700
+ -- Dmitry Petrovsky <tripswarlock@gmail.com>  Mon, 09 Nov 2026 16:40:00 +0700

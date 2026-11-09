@@ -1,7 +1,8 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Sign Everything
+Name=Подпиши всё
+Name[ru]=Подпиши всё
 GenericName=File Signer
 Comment=Mass file signing via CryptoPro CSP
 Comment[ru]=Массовое подписание файлов через КриптоПро CSP

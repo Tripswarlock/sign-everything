@@ -1,10 +1,10 @@
-# Sign Everything 1.1.0
+# Подпиши всё (Sign Everything) 1.1.1
 
 Компактное GUI-приложение для массового подписания файлов отсоединённой
 подписью через `cryptcp` из КриптоПро CSP. Работает локально: документы и
 PIN-код не покидают компьютер.
 
-![Интерфейс Sign Everything 1.1.0](docs/screenshot.png)
+![Интерфейс «Подпиши всё»](docs/screenshot.png)
 
 ## Возможности
 
@@ -55,11 +55,11 @@ pip install -r requirements.txt
 ### DEB
 
 ```bash
-sudo dpkg -i dist/sign-everything_1.1.0_all.deb
+sudo dpkg -i dist/sign-everything_1.1.1_all.deb
 sudo apt -f install
 ```
 
-Запуск из меню «Офис → Sign Everything» или командой:
+Запуск из меню «Офис → Подпиши всё» или командой:
 
 ```bash
 sign-everything
@@ -68,7 +68,7 @@ sign-everything
 ### RPM
 
 ```bash
-sudo rpm -Uvh dist/sign-everything-1.1.0-1.noarch.rpm
+sudo rpm -Uvh dist/sign-everything-1.1.1-1.noarch.rpm
 ```
 
 Имена пакетов Python-зависимостей зависят от дистрибутива. В RPM указаны
@@ -86,8 +86,8 @@ bash packaging/build-all.sh
 Результат:
 
 ```text
-dist/sign-everything_1.1.0_all.deb
-dist/sign-everything-1.1.0-1.noarch.rpm
+dist/sign-everything_1.1.1_all.deb
+dist/sign-everything-1.1.1-1.noarch.rpm
 ```
 
 Отдельно:
@@ -202,6 +202,6 @@ Sign Everything распространяется по **GNU General Public Licen
 Дмитрий Петровский
 
 - GitHub: https://github.com/Tripswarlock
-- Почта: crashday_game@mail.ru
+- Почта: tripswarlock@gmail.com
 - Проект: https://github.com/Tripswarlock/sign-everything
 - Страница: https://tripswarlock.github.io/
