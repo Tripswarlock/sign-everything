@@ -1,0 +1,15 @@
+Package: sign-everything
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Dmitry Petrovsky <crashday_game@mail.ru>
+Homepage: https://github.com/Tripswarlock/sign-everything
+Depends: python3 (>= 3.8), python3-pyqt5, python3-cryptography
+Recommends: python3-keyring, pcscd
+Installed-Size: @SIZE@
+Description: Mass file signing via CryptoPro CSP
+ Sign Everything is a desktop utility for recursively signing files with
+ detached signatures using cryptcp from CryptoPro CSP. It supports hardware
+ tokens, certificate selection, progress, cancellation and remembers the PIN
+ in the system keyring or an encrypted local vault.

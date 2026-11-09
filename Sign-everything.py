@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (C) 2026 Tripswarlock
+# SPDX-License-Identifier: GPL-3.0-only
 """
 Sign Everything 2.0
 
@@ -11,6 +13,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import html
 import json
 import os
 import platform
@@ -25,11 +28,21 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from PyQt5.QtCore import QSettings, QSize, Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QFontMetrics, QIcon, QPainter, QPixmap
+from PyQt5.QtGui import (
+    QColor,
+    QFont,
+    QFontMetrics,
+    QIcon,
+    QPainter,
+    QPixmap,
+    QTextOption,
+)
 from PyQt5.QtWidgets import (
+    QAction,
     QApplication,
     QCheckBox,
     QComboBox,
+    QDialog,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -58,7 +71,15 @@ except Exception:  # pragma: no cover - зависит от окружения
 
 
 APP_NAME = "Sign Everything"
-APP_VERSION = "2.0.0"
+APP_VERSION = "1.1.0"
+APP_REPOSITORY = "https://github.com/Tripswarlock/sign-everything"
+APP_WEBSITE = "https://tripswarlock.github.io/"
+APP_AUTHOR = "Дмитрий Петровский"
+APP_AUTHOR_URL = "https://github.com/Tripswarlock"
+APP_EMAIL = "crashday_game@mail.ru"
+APP_LICENSE = "GNU General Public License v3.0"
+APP_LICENSE_URL = APP_REPOSITORY + "/blob/main/LICENSE"
+APP_THIRD_PARTY_URL = APP_REPOSITORY + "/blob/main/THIRD_PARTY_NOTICES.md"
 PIN_SERVICE = "sign-everything"
 PIN_ACCOUNT = "signing-pin"
 
@@ -596,10 +617,10 @@ class StatCard(QFrame):
     def __init__(self, caption: str, accent: bool = False, parent=None):
         super().__init__(parent)
         self.setObjectName("Card")
-        self.setMinimumHeight(76)
+        self.setMinimumHeight(58)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 11, 16, 10)
-        layout.setSpacing(1)
+        layout.setContentsMargins(10, 7, 10, 6)
+        layout.setSpacing(0)
 
         self.value_label = QLabel("0")
         self.value_label.setObjectName("StatValue")
@@ -622,34 +643,34 @@ class DropZone(QFrame):
         self.setObjectName("DropZone")
         self.setAcceptDrops(True)
         self.setCursor(Qt.PointingHandCursor)
-        self.setMinimumHeight(104)
+        self.setMinimumHeight(82)
         self.setProperty("dragActive", "false")
         self.setProperty("selected", "false")
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 15, 18, 15)
-        layout.setSpacing(14)
+        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setSpacing(10)
 
         icon_label = QLabel()
         icon_label.setObjectName("DropIcon")
-        icon_label.setFixedSize(46, 46)
+        icon_label.setFixedSize(36, 36)
         icon_label.setAlignment(Qt.AlignCenter)
         icon_label.setPixmap(
-            self.style().standardIcon(QStyle.SP_DirOpenIcon).pixmap(28, 28)
+            self.style().standardIcon(QStyle.SP_DirOpenIcon).pixmap(22, 22)
         )
         layout.addWidget(icon_label)
 
         text_layout = QVBoxLayout()
-        text_layout.setSpacing(2)
+        text_layout.setSpacing(1)
         self.title_label = QLabel("Перетащите папку с документами")
         self.title_label.setObjectName("DropTitle")
-        self.path_label = ElidedLabel("Вложенные папки обрабатываются автоматически")
+        self.path_label = ElidedLabel("Или выберите вручную · вложенные папки обрабатываются")
         self.path_label.setObjectName("DropHint")
         text_layout.addWidget(self.title_label)
         text_layout.addWidget(self.path_label)
         layout.addLayout(text_layout, 1)
 
-        self.choose_button = QPushButton("Выбрать папку")
+        self.choose_button = QPushButton("Выбрать")
         self.choose_button.setObjectName("Secondary")
         self.choose_button.setCursor(Qt.PointingHandCursor)
         self.choose_button.clicked.connect(self.chooseClicked)
@@ -663,7 +684,7 @@ class DropZone(QFrame):
 
     def clear_folder(self) -> None:
         self.title_label.setText("Перетащите папку с документами")
-        self.path_label.set_full_text("Вложенные папки обрабатываются автоматически")
+        self.path_label.set_full_text("Или выберите вручную · вложенные папки обрабатываются")
         self.setProperty("selected", "false")
         repolish(self)
 
@@ -718,43 +739,64 @@ def make_app_icon() -> QIcon:
 # ---------------------------------------------------------------------------
 
 APP_QSS = """
-QMainWindow, QWidget#Root { background: #F4F7FB; }
+QMainWindow, QWidget#Root, QDialog { background: #F4F7FB; }
 QScrollArea { background: transparent; border: 0; }
 QScrollBar:vertical {
     background: transparent;
-    width: 10px;
+    width: 9px;
     margin: 2px;
 }
 QScrollBar::handle:vertical {
     background: #C9D5E6;
-    min-height: 32px;
+    min-height: 28px;
     border-radius: 4px;
 }
 QScrollBar::handle:vertical:hover { background: #AFC0D8; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
+QMenuBar {
+    background: #F4F7FB;
+    color: #40536C;
+    font-size: 8pt;
+    padding: 1px 4px;
+    border: 0;
+}
+QMenuBar::item {
+    background: transparent;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+QMenuBar::item:selected { background: #EAF1FF; color: #2F6BFF; }
+QMenu {
+    background: #FFFFFF;
+    color: #172033;
+    border: 1px solid #DCE4EF;
+    padding: 4px;
+}
+QMenu::item { padding: 6px 18px; border-radius: 5px; }
+QMenu::item:selected { background: #EAF1FF; color: #2F6BFF; }
 QFrame#Header {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                                 stop:0 #102C55, stop:1 #2356A4);
-    border-radius: 18px;
+    border-radius: 14px;
 }
 QLabel#BrandMark {
     background: rgba(255, 255, 255, 0.14);
     border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 11px;
+    border-radius: 9px;
     color: #FFFFFF;
-    font-size: 14pt;
+    font-size: 13pt;
     font-weight: 700;
 }
-QLabel#BrandTitle { color: #FFFFFF; font-size: 15pt; font-weight: 700; }
-QLabel#BrandSubtitle { color: rgba(255, 255, 255, 0.72); font-size: 8pt; }
+QLabel#BrandTitle { color: #FFFFFF; font-size: 14pt; font-weight: 700; }
+QLabel#BrandSubtitle { color: rgba(255, 255, 255, 0.72); font-size: 7.5pt; }
 QLabel#HeaderBadge {
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.20);
-    border-radius: 11px;
+    border-radius: 9px;
     color: #FFFFFF;
-    padding: 5px 10px;
-    font-size: 7.5pt;
+    padding: 3px 8px;
+    font-size: 7pt;
     font-weight: 600;
 }
 QLabel#HeaderBadge[state="warn"] {
@@ -764,18 +806,18 @@ QLabel#HeaderBadge[state="warn"] {
 QFrame#Card {
     background: #FFFFFF;
     border: 1px solid #E4EAF3;
-    border-radius: 16px;
+    border-radius: 12px;
 }
-QLabel#CardTitle { color: #172033; font-size: 9pt; font-weight: 700; }
-QLabel#FieldLabel { color: #4A5A70; font-size: 8pt; font-weight: 600; }
-QLabel#Hint { color: #8190A5; font-size: 7.5pt; }
-QLabel#StatValue { color: #172033; font-size: 16pt; font-weight: 700; }
+QLabel#CardTitle { color: #172033; font-size: 8.5pt; font-weight: 700; }
+QLabel#FieldLabel { color: #4A5A70; font-size: 7.5pt; font-weight: 600; }
+QLabel#Hint { color: #8190A5; font-size: 7pt; }
+QLabel#StatValue { color: #172033; font-size: 15pt; font-weight: 700; }
 QLabel#StatValue[accent="true"] { color: #2F6BFF; }
-QLabel#StatCaption { color: #7A899E; font-size: 7.5pt; }
+QLabel#StatCaption { color: #7A899E; font-size: 7pt; }
 QFrame#DropZone {
     background: #FFFFFF;
     border: 2px dashed #C8D6E8;
-    border-radius: 16px;
+    border-radius: 12px;
 }
 QFrame#DropZone[dragActive="true"] {
     background: #F3F7FF;
@@ -786,19 +828,20 @@ QFrame#DropZone[selected="true"] {
     border: 1px solid #CFE0FF;
 }
 QLabel#DropTitle { color: #172033; font-size: 9.5pt; font-weight: 700; }
-QLabel#DropHint { color: #7B8BA1; font-size: 8pt; }
+QLabel#DropHint { color: #7B8BA1; font-size: 7.5pt; }
 QLabel#DropIcon {
     background: #EAF1FF;
-    border-radius: 12px;
+    border-radius: 10px;
 }
 QComboBox, QLineEdit {
     background: #F8FAFD;
     border: 1px solid #DCE4EF;
-    border-radius: 9px;
-    padding: 7px 10px;
+    border-radius: 7px;
+    padding: 5px 8px;
     color: #172033;
+    font-size: 8.5pt;
     selection-background-color: #2F6BFF;
-    min-height: 18px;
+    min-height: 16px;
 }
 QComboBox:focus, QLineEdit:focus {
     background: #FFFFFF;
@@ -819,18 +862,18 @@ QComboBox QLineEdit {
 }
 QComboBox::drop-down {
     border: 0;
-    width: 26px;
+    width: 24px;
 }
 QPushButton {
     font-family: "DejaVu Sans";
-    font-size: 8.5pt;
+    font-size: 8pt;
 }
 QPushButton#Secondary {
     background: #F1F5FB;
     color: #24405F;
     border: 1px solid #DCE5F1;
-    border-radius: 9px;
-    padding: 8px 14px;
+    border-radius: 7px;
+    padding: 6px 10px;
     font-weight: 600;
 }
 QPushButton#Secondary:hover { background: #E8EFF9; }
@@ -839,9 +882,9 @@ QPushButton#Primary {
     background: #2F6BFF;
     color: #FFFFFF;
     border: 0;
-    border-radius: 10px;
-    padding: 10px 18px;
-    font-size: 9pt;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 8.5pt;
     font-weight: 700;
 }
 QPushButton#Primary:hover { background: #1F56DB; }
@@ -851,8 +894,8 @@ QPushButton#Danger {
     background: #FFF2F3;
     color: #C43A4C;
     border: 1px solid #F4CDD3;
-    border-radius: 9px;
-    padding: 8px 15px;
+    border-radius: 7px;
+    padding: 6px 12px;
     font-weight: 600;
 }
 QPushButton#Danger:hover { background: #FFE7EA; }
@@ -863,55 +906,173 @@ QPushButton#Ghost {
     background: transparent;
     color: #5E7089;
     border: 0;
-    border-radius: 8px;
-    padding: 6px 8px;
+    border-radius: 6px;
+    padding: 5px 6px;
 }
 QPushButton#Ghost:hover { color: #2F6BFF; background: #EEF4FF; }
 QPushButton#Link {
     background: transparent;
     color: #5E7089;
     border: 0;
-    padding: 4px 2px;
+    padding: 3px 1px;
     text-decoration: underline;
 }
 QPushButton#Link:hover { color: #C43A4C; }
-QCheckBox { color: #4A5A70; font-size: 8.5pt; spacing: 7px; }
+QCheckBox { color: #4A5A70; font-size: 8pt; spacing: 6px; }
 QProgressBar {
     background: #E8EEF8;
     border: 0;
-    border-radius: 4px;
-    max-height: 8px;
-    min-height: 8px;
+    border-radius: 3px;
+    max-height: 6px;
+    min-height: 6px;
 }
-QProgressBar::chunk { background: #2F6BFF; border-radius: 4px; }
+QProgressBar::chunk { background: #2F6BFF; border-radius: 3px; }
 QTextEdit#Log {
     background: #F8FAFD;
     border: 1px solid #E1E8F2;
-    border-radius: 10px;
+    border-radius: 8px;
     color: #33465E;
     font-family: "DejaVu Sans Mono";
-    font-size: 8pt;
-    padding: 8px;
+    font-size: 7.5pt;
+    padding: 6px;
     selection-background-color: #D8E5FF;
 }
 QLabel#Chip {
     background: #EDF2F9;
     color: #607089;
-    border-radius: 10px;
-    padding: 5px 10px;
-    font-size: 7.5pt;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 7pt;
     font-weight: 700;
 }
 QLabel#Chip[state="busy"] { background: #EAF1FF; color: #2F6BFF; }
 QLabel#Chip[state="ok"] { background: #E8F7F1; color: #0F8A64; }
 QLabel#Chip[state="error"] { background: #FFF0F2; color: #C43A4C; }
-QLabel#PinStatus { color: #8190A5; font-size: 7.5pt; }
+QLabel#PinStatus { color: #8190A5; font-size: 7pt; }
 QLabel#PinStatus[state="ok"] { color: #0F8A64; }
 QLabel#PinStatus[state="warn"] { color: #B26A00; }
 QLabel#PinStatus[state="error"] { color: #C43A4C; }
-QLabel#CurrentFile { color: #8190A5; font-size: 7.5pt; }
-QLabel#Percent { color: #40536C; font-size: 8.5pt; font-weight: 700; }
+QLabel#CurrentFile { color: #8190A5; font-size: 7pt; }
+QLabel#Percent { color: #40536C; font-size: 8pt; font-weight: 700; }
+QFrame#Separator { background: #E4EAF3; border: 0; }
+QLabel#AboutTitle { color: #172033; font-size: 16pt; font-weight: 700; }
+QLabel#AboutVersion { color: #8190A5; font-size: 8pt; }
+QLabel#AboutDescription { color: #40536C; font-size: 8.5pt; }
+QLabel#AboutCaption { color: #8190A5; font-size: 8pt; }
+QLabel#AboutLink { color: #2F6BFF; font-size: 8.5pt; }
+QLabel#AboutNote { color: #8190A5; font-size: 7.5pt; }
 """
+
+
+class AboutDialog(QDialog):
+    """Компактное окно «О программе» в духе WindowRecorder."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("О программе")
+        self.setWindowIcon(make_app_icon())
+        self.setModal(True)
+        self.setSizeGripEnabled(False)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setStyleSheet(APP_QSS)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(22, 18, 22, 14)
+        layout.setSpacing(8)
+
+        header = QHBoxLayout()
+        header.setSpacing(14)
+        icon = QLabel()
+        icon.setFixedSize(54, 54)
+        icon.setPixmap(make_app_icon().pixmap(54, 54))
+        header.addWidget(icon)
+
+        title_box = QVBoxLayout()
+        title_box.setSpacing(1)
+        title = QLabel(APP_NAME)
+        title.setObjectName("AboutTitle")
+        version = QLabel(f"Версия {APP_VERSION}")
+        version.setObjectName("AboutVersion")
+        title_box.addWidget(title)
+        title_box.addWidget(version)
+        header.addLayout(title_box)
+        header.addStretch(1)
+        layout.addLayout(header)
+
+        description = QLabel(
+            "Массовое подписание файлов отсоединённой подписью через КриптоПро CSP. "
+            "Поддержка аппаратных токенов, выбор сертификата, журнал операций, "
+            "остановка подписания и запоминание PIN-кода."
+        )
+        description.setObjectName("AboutDescription")
+        description.setWordWrap(True)
+        layout.addWidget(description)
+
+        separator = QFrame()
+        separator.setObjectName("Separator")
+        separator.setFixedHeight(1)
+        layout.addWidget(separator)
+
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(5)
+        grid.setColumnMinimumWidth(0, 104)
+        rows = [
+            ("Автор", APP_AUTHOR, APP_AUTHOR_URL),
+            ("Почта", APP_EMAIL, "mailto:" + APP_EMAIL),
+            ("Репозиторий", "github.com/Tripswarlock/sign-everything", APP_REPOSITORY),
+            ("Страница проекта", "tripswarlock.github.io", APP_WEBSITE),
+            ("3rd party", "THIRD_PARTY_NOTICES.md", APP_THIRD_PARTY_URL),
+            ("Лицензия", APP_LICENSE, APP_LICENSE_URL),
+        ]
+        for row, (caption, text, url) in enumerate(rows):
+            caption_label = QLabel(caption)
+            caption_label.setObjectName("AboutCaption")
+            grid.addWidget(caption_label, row, 0)
+            link = QLabel()
+            link.setObjectName("AboutLink")
+            link.setTextFormat(Qt.RichText)
+            link.setText(
+                f'<a href="{html.escape(url)}" '
+                f'style="color:#2F6BFF; text-decoration:none;">{html.escape(text)}</a>'
+            )
+            link.setOpenExternalLinks(True)
+            link.setTextInteractionFlags(Qt.TextBrowserInteraction)
+            link.setToolTip(url)
+            grid.addWidget(link, row, 1)
+        layout.addLayout(grid)
+
+        note = QLabel(
+            "Это свободное программное обеспечение под GNU GPL v3.0. "
+            "PyQt5 распространяется по GPLv3 или коммерческой лицензии; "
+            "Cryptography — по Apache 2.0/BSD. КриптоПро CSP в состав пакета не входит. "
+            "© 2026 Tripswarlock."
+        )
+        note.setObjectName("AboutNote")
+        note.setWordWrap(True)
+        layout.addWidget(note)
+
+        footer = QHBoxLayout()
+        site = QLabel(
+            f'<a href="{APP_WEBSITE}" style="color:#8190A5; text-decoration:none;">'
+            f'{APP_WEBSITE.replace("https://", "")}</a>'
+        )
+        site.setObjectName("AboutNote")
+        site.setTextFormat(Qt.RichText)
+        site.setOpenExternalLinks(True)
+        site.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        footer.addWidget(site)
+        footer.addStretch(1)
+        close_btn = QPushButton("Закрыть")
+        close_btn.setObjectName("Secondary")
+        close_btn.setCursor(Qt.PointingHandCursor)
+        close_btn.setFixedWidth(96)
+        close_btn.clicked.connect(self.accept)
+        footer.addWidget(close_btn)
+        layout.addLayout(footer)
+
+        self.setFixedWidth(560)
+        self.adjustSize()
 
 
 class MainWindow(QMainWindow):
@@ -933,10 +1094,10 @@ class MainWindow(QMainWindow):
         self._loading_pin = False
         self._last_worker_summary: Optional[dict] = None
 
-        self.setWindowTitle(f"{APP_NAME} — подписание файлов КриптоПро")
+        self.setWindowTitle(f"{APP_NAME} {APP_VERSION} — подписание файлов КриптоПро")
         self.setWindowIcon(make_app_icon())
-        self.setMinimumSize(920, 640)
-        self.resize(1040, 800)
+        self.setMinimumSize(680, 560)
+        self.resize(680, 700)
 
         self._build_ui()
         self._restore_settings()
@@ -948,6 +1109,8 @@ class MainWindow(QMainWindow):
     # ---- построение интерфейса -------------------------------------------------
 
     def _build_ui(self) -> None:
+        self._build_menu()
+
         body = QWidget()
         body.setObjectName("Root")
 
@@ -961,8 +1124,8 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(APP_QSS)
 
         root = QVBoxLayout(body)
-        root.setContentsMargins(24, 20, 24, 16)
-        root.setSpacing(12)
+        root.setContentsMargins(16, 12, 16, 10)
+        root.setSpacing(8)
 
         root.addWidget(self._build_header())
         self.drop_zone = DropZone()
@@ -973,27 +1136,40 @@ class MainWindow(QMainWindow):
         root.addWidget(self._build_settings())
         root.addWidget(self._build_actions())
         root.addWidget(self._build_log(), 1)
-        root.addWidget(self._build_footer())
+
+    def _build_menu(self) -> None:
+        menu_bar = self.menuBar()
+        menu_bar.setObjectName("MenuBar")
+        help_menu = menu_bar.addMenu("Справка")
+
+        about_action = QAction("О программе", self)
+        about_action.setShortcut("F1")
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
+
+    def show_about(self) -> None:
+        dialog = AboutDialog(self)
+        dialog.exec_()
 
     def _build_header(self) -> QFrame:
         header = QFrame()
         header.setObjectName("Header")
-        header.setFixedHeight(88)
+        header.setFixedHeight(72)
         layout = QHBoxLayout(header)
-        layout.setContentsMargins(22, 14, 20, 14)
-        layout.setSpacing(14)
+        layout.setContentsMargins(16, 10, 14, 10)
+        layout.setSpacing(10)
 
         mark = QLabel("S")
         mark.setObjectName("BrandMark")
         mark.setAlignment(Qt.AlignCenter)
-        mark.setFixedSize(40, 40)
+        mark.setFixedSize(34, 34)
         layout.addWidget(mark)
 
         text_layout = QVBoxLayout()
-        text_layout.setSpacing(1)
+        text_layout.setSpacing(0)
         title = QLabel(APP_NAME)
         title.setObjectName("BrandTitle")
-        subtitle = QLabel("Массовое подписание документов через КриптоПро CSP")
+        subtitle = QLabel("Подписание документов через КриптоПро CSP")
         subtitle.setObjectName("BrandSubtitle")
         text_layout.addWidget(title)
         text_layout.addWidget(subtitle)
@@ -1028,8 +1204,8 @@ class MainWindow(QMainWindow):
         card = QFrame()
         card.setObjectName("Card")
         outer = QVBoxLayout(card)
-        outer.setContentsMargins(20, 14, 20, 12)
-        outer.setSpacing(9)
+        outer.setContentsMargins(14, 10, 14, 8)
+        outer.setSpacing(6)
 
         title_row = QHBoxLayout()
         title = QLabel("Параметры подписания")
@@ -1044,9 +1220,9 @@ class MainWindow(QMainWindow):
         outer.addLayout(title_row)
 
         grid = QGridLayout()
-        grid.setHorizontalSpacing(9)
-        grid.setVerticalSpacing(8)
-        grid.setColumnMinimumWidth(0, 82)
+        grid.setHorizontalSpacing(6)
+        grid.setVerticalSpacing(5)
+        grid.setColumnMinimumWidth(0, 66)
         grid.setColumnStretch(1, 1)
 
         cert_label = QLabel("Сертификат")
@@ -1056,16 +1232,19 @@ class MainWindow(QMainWindow):
         self.cert_combo = QComboBox()
         self.cert_combo.setEditable(True)
         self.cert_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.cert_combo.setMinimumHeight(34)
+        self.cert_combo.setMinimumHeight(30)
         self.cert_combo.lineEdit().setPlaceholderText("Сертификат не выбран — обновите список")
         self.cert_combo.currentIndexChanged.connect(self._on_cert_changed)
         self.cert_combo.editTextChanged.connect(lambda _: self._update_sign_enabled())
         grid.addWidget(self.cert_combo, 0, 1, 1, 3)
 
-        self.refresh_btn = QPushButton("Обновить")
+        self.refresh_btn = QPushButton()
         self.refresh_btn.setObjectName("Secondary")
         self.refresh_btn.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        self.refresh_btn.setIconSize(QSize(14, 14))
         self.refresh_btn.setCursor(Qt.PointingHandCursor)
+        self.refresh_btn.setFixedSize(30, 30)
+        self.refresh_btn.setToolTip("Обновить список сертификатов")
         self.refresh_btn.clicked.connect(self.load_certificates)
         grid.addWidget(self.refresh_btn, 0, 4)
 
@@ -1076,8 +1255,8 @@ class MainWindow(QMainWindow):
         self.pin_edit = QLineEdit()
         self.pin_edit.setPlaceholderText("Введите PIN-код носителя")
         self.pin_edit.setEchoMode(QLineEdit.Password)
-        self.pin_edit.setMinimumHeight(34)
-        self.pin_edit.setMinimumWidth(220)
+        self.pin_edit.setMinimumHeight(30)
+        self.pin_edit.setMinimumWidth(140)
         self.pin_edit.textEdited.connect(self._on_pin_edited)
         self.pin_edit.returnPressed.connect(self.start_signing)
         grid.addWidget(self.pin_edit, 1, 1)
@@ -1086,7 +1265,8 @@ class MainWindow(QMainWindow):
         self.eye_btn.setObjectName("Ghost")
         self.eye_btn.setCheckable(True)
         self.eye_btn.setCursor(Qt.PointingHandCursor)
-        self.eye_btn.setFixedWidth(72)
+        self.eye_btn.setFixedWidth(60)
+        self.eye_btn.setMinimumHeight(30)
         self.eye_btn.toggled.connect(self._toggle_pin_visibility)
         grid.addWidget(self.eye_btn, 1, 2)
 
@@ -1121,16 +1301,16 @@ class MainWindow(QMainWindow):
         card = QFrame()
         card.setObjectName("Card")
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(20, 13, 20, 12)
-        layout.setSpacing(7)
+        layout.setContentsMargins(14, 9, 14, 8)
+        layout.setSpacing(6)
 
         row = QHBoxLayout()
-        row.setSpacing(9)
+        row.setSpacing(7)
         self.btn_sign = QPushButton("Подписать файлы")
         self.btn_sign.setObjectName("Primary")
         self.btn_sign.setCursor(Qt.PointingHandCursor)
-        self.btn_sign.setMinimumHeight(42)
-        self.btn_sign.setMinimumWidth(178)
+        self.btn_sign.setMinimumHeight(36)
+        self.btn_sign.setMinimumWidth(160)
         self.btn_sign.setEnabled(False)
         self.btn_sign.clicked.connect(self.start_signing)
         row.addWidget(self.btn_sign)
@@ -1138,7 +1318,7 @@ class MainWindow(QMainWindow):
         self.btn_stop = QPushButton("Остановить")
         self.btn_stop.setObjectName("Danger")
         self.btn_stop.setCursor(Qt.PointingHandCursor)
-        self.btn_stop.setMinimumHeight(42)
+        self.btn_stop.setMinimumHeight(36)
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.stop_signing)
         row.addWidget(self.btn_stop)
@@ -1152,7 +1332,7 @@ class MainWindow(QMainWindow):
         self.percent_label = QLabel("0%")
         self.percent_label.setObjectName("Percent")
         self.percent_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.percent_label.setFixedWidth(44)
+        self.percent_label.setFixedWidth(38)
         row.addWidget(self.percent_label)
         layout.addLayout(row)
 
@@ -1171,8 +1351,8 @@ class MainWindow(QMainWindow):
         card = QFrame()
         card.setObjectName("Card")
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(18, 12, 18, 12)
-        layout.setSpacing(7)
+        layout.setContentsMargins(14, 8, 14, 8)
+        layout.setSpacing(5)
 
         header = QHBoxLayout()
         title = QLabel("Журнал выполнения")
@@ -1196,23 +1376,15 @@ class MainWindow(QMainWindow):
         self.log = QTextEdit()
         self.log.setObjectName("Log")
         self.log.setReadOnly(True)
-        self.log.setMinimumHeight(70)
+        self.log.setMinimumHeight(80)
+        self.log.setMinimumWidth(0)
+        self.log.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.log.setLineWrapMode(QTextEdit.WidgetWidth)
+        self.log.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+        self.log.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Expanding)
         self.log.document().setMaximumBlockCount(2500)
         layout.addWidget(self.log, 1)
         return card
-
-    def _build_footer(self) -> QWidget:
-        footer = QWidget()
-        layout = QHBoxLayout(footer)
-        layout.setContentsMargins(4, 0, 4, 0)
-        left = QLabel("Локальная обработка · документы не покидают компьютер")
-        left.setObjectName("Hint")
-        right = QLabel(f"{APP_NAME} {APP_VERSION}")
-        right.setObjectName("Hint")
-        layout.addWidget(left)
-        layout.addStretch(1)
-        layout.addWidget(right)
-        return footer
 
     # ---- настройки и PIN -------------------------------------------------------
 

@@ -1,0 +1,15 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Sign Everything
+GenericName=File Signer
+Comment=Mass file signing via CryptoPro CSP
+Comment[ru]=Массовое подписание файлов через КриптоПро CSP
+Exec=sign-everything
+Icon=sign-everything
+Terminal=false
+Categories=Office;
+Keywords=sign;signature;cryptopro;crypto;эцп;подпись;криптопро;
+StartupNotify=true
+StartupWMClass=SignEverything
+X-GNOME-UsesNotifications=true
