@@ -1040,16 +1040,16 @@ QFrame#StatCard {{
     border-radius: 8px;
 }}
 QFrame#StatCard[accent="true"] {{
-    background: #4176E6;
-    border-color: #3768D0;
+    background: #DCE9FF;
+    border-color: #A9C7FF;
 }}
 QLabel#CardTitle {{ color: #0F1115; font-size: 9.5pt; font-weight: 600; }}
 QLabel#FieldLabel {{ color: #61666B; font-size: 8pt; font-weight: 500; }}
 QLabel#Hint {{ color: #81858C; font-size: 7.5pt; }}
-QLabel#StatValue {{ color: #0F1115; font-size: 15pt; font-weight: 600; }}
-QLabel#StatValue[accent="true"] {{ color: #FFFFFF; }}
-QLabel#StatCaption {{ color: #61666B; font-size: 7.5pt; }}
-QLabel#StatCaption[accent="true"] {{ color: #FFFFFF; }}
+QLabel#StatValue {{ color: #0F1115; font-size: 16pt; font-weight: 600; }}
+QLabel#StatValue[accent="true"] {{ color: #0B2E6F; }}
+QLabel#StatCaption {{ color: #61666B; font-size: 8pt; }}
+QLabel#StatCaption[accent="true"] {{ color: #24406B; }}
 
 /* Зона перетаскивания */
 QFrame#DropZone {{
