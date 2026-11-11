@@ -6,6 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 VERSION="$(grep -m1 '^APP_VERSION = ' Sign-everything.py | cut -d'"' -f2)"
+VERSION="${VERSION%$'\r'}"
 if [ -z "$VERSION" ]; then
     echo "Не удалось определить APP_VERSION" >&2
     exit 1

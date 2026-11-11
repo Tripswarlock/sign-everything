@@ -6,11 +6,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 VERSION="$(grep -m1 '^APP_VERSION = ' Sign-everything.py | cut -d'"' -f2)"
+VERSION="${VERSION%$'\r'}"
 if [ -z "$VERSION" ]; then
     echo "Не удалось определить APP_VERSION" >&2
     exit 1
 fi
 SPEC_VERSION="$(grep -m1 '^Version:' packaging/rpm/sign-everything.spec | awk '{print $2}')"
+SPEC_VERSION="${SPEC_VERSION%$'\r'}"
 if [ "$VERSION" != "$SPEC_VERSION" ]; then
     echo "Версия приложения ($VERSION) не совпадает с версией в spec ($SPEC_VERSION)" >&2
     exit 1

@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Tripswarlock
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Sign Everything 1.1.0 (Подпиши всё)
+Sign Everything 1.2 (Подпиши всё)
 
 Массовое подписание файлов отсоединённой подписью через КриптоПро CSP.
 Работает локально: файлы и PIN-код не покидают компьютер.
@@ -80,7 +80,7 @@ except Exception:  # pragma: no cover - зависит от окружения
 
 APP_NAME = "Sign Everything"
 APP_DISPLAY_NAME = "Подпиши всё"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2"
 APP_REPOSITORY = "https://github.com/Tripswarlock/sign-everything"
 APP_WEBSITE = "https://tripswarlock.github.io/"
 APP_AUTHOR = "Дмитрий Петровский"
@@ -1543,6 +1543,17 @@ class MainWindow(QMainWindow):
         self.token_badge.setProperty("state", "warn")
         layout.addWidget(self.token_badge)
 
+        self.token_refresh_btn = QToolButton()
+        self.token_refresh_btn.setObjectName("TokenRefresh")
+        apply_tool_button_style(self.token_refresh_btn)
+        self.token_refresh_btn.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        self.token_refresh_btn.setIconSize(QSize(15, 15))
+        self.token_refresh_btn.setFixedSize(24, 24)
+        self.token_refresh_btn.setCursor(Qt.PointingHandCursor)
+        self.token_refresh_btn.setToolTip("Обновить статус токена")
+        self.token_refresh_btn.clicked.connect(self.load_certificates)
+        layout.addWidget(self.token_refresh_btn)
+
         version_badge = QLabel(f"v{APP_VERSION}")
         version_badge.setObjectName("HeaderBadge")
         layout.addWidget(version_badge)
@@ -1913,6 +1924,7 @@ class MainWindow(QMainWindow):
             previous = ""
 
         self.refresh_btn.setEnabled(False)
+        self.token_refresh_btn.setEnabled(False)
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             env = os.environ.copy()
@@ -1941,6 +1953,7 @@ class MainWindow(QMainWindow):
             return
         finally:
             self.refresh_btn.setEnabled(True)
+            self.token_refresh_btn.setEnabled(True)
             QApplication.restoreOverrideCursor()
 
         certs = parse_certificates(result.stdout)

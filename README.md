@@ -1,4 +1,4 @@
-# Подпиши всё (Sign Everything) 1.1.0
+# Подпиши всё (Sign Everything) 1.2
 
 Компактное GUI-приложение для массового подписания файлов отсоединённой
 подписью через `cryptcp` из КриптоПро CSP.
@@ -51,7 +51,7 @@ pip install -r requirements.txt
 ### DEB
 
 ```bash
-sudo dpkg -i dist/sign-everything_1.1.0_all.deb
+sudo dpkg -i dist/sign-everything_1.2_all.deb
 sudo apt -f install
 ```
 
@@ -60,7 +60,7 @@ sudo apt -f install
 ### RPM
 
 ```bash
-sudo rpm -Uvh dist/sign-everything-1.1.0-1.noarch.rpm
+sudo rpm -Uvh dist/sign-everything-1.2-1.noarch.rpm
 ```
 
 Имена пакетов Python-зависимостей зависят от дистрибутива. В RPM указаны
