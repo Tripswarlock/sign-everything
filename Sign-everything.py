@@ -98,7 +98,8 @@ PIN_ACCOUNT = "signing-pin"
 
 def find_cprocsp_tool(name: str) -> Optional[str]:
     """Находит cryptcp/certmgr в стандартных каталогах КриптоПро."""
-    override = os.environ.get("CRYPTCP_PATH" if name == "cryptcp" else "CERTMGR_PATH")
+    env_names = {"cryptcp": "CRYPTCP_PATH", "certmgr": "CERTMGR_PATH", "csptest": "CSPTEST_PATH"}
+    override = os.environ.get(env_names.get(name, ""))
     if override and os.path.isfile(override):
         return override
 
@@ -110,6 +111,42 @@ def find_cprocsp_tool(name: str) -> Optional[str]:
 
     found = shutil.which(name)
     return found
+
+
+def token_present(csptest: Optional[str]) -> bool:
+    """Проверяет, что PC/SC видит хотя бы один считыватель с картой."""
+    if not csptest:
+        return False
+    env = os.environ.copy()
+    env["LC_ALL"] = "C.UTF-8"
+    env["LANG"] = "C.UTF-8"
+    try:
+        result = subprocess.run(
+            [csptest, "-card", "-enum"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=8,
+            env=env,
+        )
+    except Exception:
+        return False
+
+    output = (result.stdout or "") + "\n" + (result.stderr or "")
+    if "SCardListReaders" in output or "0x8010002e" in output:
+        return False
+    if "[ErrorCode: 0x00000000]" not in output:
+        return False
+    for line in output.splitlines():
+        line = line.strip()
+        if not line or line.startswith("[") or line.startswith("Total:") or line.startswith("CSP"):
+            continue
+        # У пустого слота ATR нулевой: "reader (...) 00 00".
+        tail = line.rsplit(")", 1)[-1].strip() if ")" in line else line
+        if any(part and part.upper() != "00" for part in tail.split()):
+            return True
+    return False
 
 
 def is_signature_artifact(filename: str) -> bool:
@@ -501,10 +538,12 @@ class SignWorker(QThread):
                         "-detach",
                         "-dn",
                         self.dn,
+                        "-pin",
+                        self.pin,
                         source,
                         temp_target,
                     ],
-                    stdin=subprocess.PIPE,
+                    stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
@@ -513,7 +552,7 @@ class SignWorker(QThread):
                 )
                 self._proc = proc
                 try:
-                    stdout, stderr = proc.communicate(self.pin + "\n", timeout=120)
+                    stdout, stderr = proc.communicate(timeout=120)
                 except subprocess.TimeoutExpired:
                     proc.kill()
                     stdout, stderr = proc.communicate()
@@ -1384,6 +1423,8 @@ class MainWindow(QMainWindow):
         self.pin_store = PinStore()
         self.cryptcp = find_cprocsp_tool("cryptcp")
         self.certmgr = find_cprocsp_tool("certmgr")
+        self.csptest = find_cprocsp_tool("csptest")
+        self.token_connected = False
 
         self.current_folder: Optional[str] = None
         self.worker: Optional[SignWorker] = None
@@ -1848,6 +1889,7 @@ class MainWindow(QMainWindow):
         repolish(self.token_badge)
 
     def load_certificates(self, checked=None) -> None:
+        self.token_connected = token_present(self.csptest)
         if not self.certmgr:
             self._set_token_badge("КриптоПро не найден", "warn")
             return
@@ -1893,7 +1935,10 @@ class MainWindow(QMainWindow):
             self.cert_combo.clear()
             self.cert_combo.setCurrentText("")
             self.cert_combo.blockSignals(False)
-            self._set_token_badge("Токен не найден", "warn")
+            if self.token_connected:
+                self._set_token_badge("Сертификат не найден", "warn")
+            else:
+                self._set_token_badge("Токен не найден", "warn")
             detail = (result.stderr or result.stdout).strip()
             if detail:
                 self._append_log(f"Сертификаты не найдены: {detail[-300:]}")
@@ -1916,11 +1961,10 @@ class MainWindow(QMainWindow):
         self.cert_combo.setCurrentIndex(selected_index)
         self.cert_combo.blockSignals(False)
 
-        on_token = any(cert.on_token for cert in certs)
-        if on_token:
+        if self.token_connected:
             self._set_token_badge("Токен подключён", "ok")
         else:
-            self._set_token_badge("Сертификат найден", "ok")
+            self._set_token_badge("Токен не найден", "warn")
         expired_count = sum(1 for cert in certs if cert.expired)
         suffix = f" (просрочено: {expired_count})" if expired_count else ""
         self._append_log(f"Найдено сертификатов: {len(certs)}{suffix}.")
@@ -2012,6 +2056,7 @@ class MainWindow(QMainWindow):
         enabled = bool(
             not self._busy
             and self.cryptcp
+            and self.token_connected
             and self.current_folder
             and self.files_to_sign > 0
             and self._selected_dn()
