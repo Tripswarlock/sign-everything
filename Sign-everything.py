@@ -114,7 +114,21 @@ def find_cprocsp_tool(name: str) -> Optional[str]:
 
 
 def token_present(csptest: Optional[str]) -> bool:
-    """Проверяет, что PC/SC видит хотя бы один считыватель с картой."""
+    """Информационная проверка: USB-токен или непустой ATR считывателя."""
+    # У JaCarta/csptest ATR часто отображается как "00 00" даже при карте,
+    # поэтому сначала проверяем сам USB-токен.
+    try:
+        usb = subprocess.run(
+            ["lsusb"], capture_output=True, text=True, timeout=5, errors="replace"
+        )
+        usb_text = (usb.stdout or "").lower()
+        if "jacarta" in usb_text or any(
+            vendor in usb_text for vendor in ("24dc:", "0a89:", "0529:", "1fc9:")
+        ):
+            return True
+    except Exception:
+        pass
+
     if not csptest:
         return False
     env = os.environ.copy()
@@ -2056,7 +2070,6 @@ class MainWindow(QMainWindow):
         enabled = bool(
             not self._busy
             and self.cryptcp
-            and self.token_connected
             and self.current_folder
             and self.files_to_sign > 0
             and self._selected_dn()
