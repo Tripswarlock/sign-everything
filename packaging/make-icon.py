@@ -11,7 +11,7 @@ draw = ImageDraw.Draw(img)
 draw.rounded_rectangle(
     (32, 32, SIZE - 32, SIZE - 32),
     radius=210,
-    fill=(11, 87, 208, 255),
+    fill=(15, 17, 21, 255),
 )
 
 font_paths = [
