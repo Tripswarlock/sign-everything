@@ -50,6 +50,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QFileDialog,
     QFrame,
+    QGraphicsDropShadowEffect,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -602,6 +603,15 @@ def repolish(widget: QWidget) -> None:
     widget.update()
 
 
+def apply_elevation(widget: QWidget, blur: int = 32, offset: int = 6, alpha: int = 80) -> None:
+    """Материальная тень карточки. QSS box-shadow не поддерживает."""
+    effect = QGraphicsDropShadowEffect(widget)
+    effect.setBlurRadius(blur)
+    effect.setOffset(0, offset)
+    effect.setColor(QColor(15, 23, 42, alpha))
+    widget.setGraphicsEffect(effect)
+
+
 class ElidedLabel(QLabel):
     def __init__(self, text: str = "", parent=None):
         super().__init__(parent)
@@ -652,6 +662,7 @@ class StatCard(QFrame):
         caption_label.setObjectName("StatCaption")
         layout.addWidget(self.value_label)
         layout.addWidget(caption_label)
+        apply_elevation(self, blur=26, offset=5, alpha=80)
 
     def set_value(self, value: int) -> None:
         self.value_label.setText(str(value))
@@ -698,6 +709,7 @@ class DropZone(QFrame):
         self.choose_button.setCursor(Qt.PointingHandCursor)
         self.choose_button.clicked.connect(self.chooseClicked)
         layout.addWidget(self.choose_button)
+        apply_elevation(self, blur=28, offset=6, alpha=65)
 
     def set_folder(self, path: str) -> None:
         self.title_label.setText("Папка выбрана")
@@ -869,7 +881,7 @@ def build_app_qss() -> str:
     chevron = _ui_asset("chevron.png")
     return f"""
 /* Material 3 — базовые поверхности */
-QMainWindow, QWidget#Root, QDialog {{ background: #F8F9FF; }}
+QMainWindow, QWidget#Root, QDialog {{ background: #F2F4F7; }}
 QToolTip {{
     background: #1A1C1E;
     color: #F8F9FF;
@@ -895,7 +907,7 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: tran
 
 /* Меню */
 QMenuBar {{
-    background: #F8F9FF;
+    background: #FFFFFF;
     color: #43474E;
     font-size: 8.5pt;
     padding: 2px 6px;
@@ -906,9 +918,9 @@ QMenuBar::item {{
     padding: 4px 10px;
     border-radius: 8px;
 }}
-QMenuBar::item:selected {{ background: #E1E3E9; color: #1A1C1E; }}
+QMenuBar::item:selected {{ background: #E8ECF2; color: #1A1C1E; }}
 QMenu {{
-    background: #ECEEF4;
+    background: #FFFFFF;
     color: #1A1C1E;
     border: 0;
     border-radius: 12px;
@@ -919,7 +931,7 @@ QMenu::item:selected {{ background: #D3E3FD; color: #041E49; }}
 
 /* Верхняя панель (top app bar) */
 QFrame#Header {{
-    background: #F8F9FF;
+    background: #FFFFFF;
     border: 0;
     border-bottom: 1px solid #C3C7CF;
     border-radius: 0;
@@ -931,7 +943,7 @@ QLabel#BrandMark {{
 QLabel#BrandTitle {{ color: #1A1C1E; font-size: 17pt; font-weight: 500; }}
 QLabel#BrandSubtitle {{ color: #43474E; font-size: 8pt; }}
 QLabel#HeaderBadge {{
-    background: #E6E8EE;
+    background: #E8ECF2;
     border: 0;
     border-radius: 8px;
     color: #43474E;
@@ -944,14 +956,14 @@ QLabel#HeaderBadge[state="ok"] {{ background: #C4EED0; color: #0E5222; }}
 
 /* Карточки */
 QFrame#Card {{
-    background: #ECEEF4;
+    background: #FFFFFF;
     border: 0;
-    border-radius: 12px;
+    border-radius: 16px;
 }}
 QFrame#StatCard {{
-    background: #ECEEF4;
+    background: #FFFFFF;
     border: 0;
-    border-radius: 12px;
+    border-radius: 16px;
 }}
 QFrame#StatCard[accent="true"] {{ background: #D3E3FD; }}
 QLabel#CardTitle {{ color: #1A1C1E; font-size: 9pt; font-weight: 600; }}
@@ -963,16 +975,16 @@ QLabel#StatCaption {{ color: #43474E; font-size: 7.5pt; }}
 
 /* Зона перетаскивания */
 QFrame#DropZone {{
-    background: #F2F3F9;
+    background: #FFFFFF;
     border: 1.5px dashed #C3C7CF;
-    border-radius: 12px;
+    border-radius: 16px;
 }}
 QFrame#DropZone[dragActive="true"] {{
     background: #D3E3FD;
     border: 2px dashed #0B57D0;
 }}
 QFrame#DropZone[selected="true"] {{
-    background: #ECEEF4;
+    background: #F7F9FC;
     border: 1px solid #C3C7CF;
 }}
 QLabel#DropTitle {{ color: #1A1C1E; font-size: 9.5pt; font-weight: 500; }}
@@ -984,7 +996,7 @@ QLabel#DropIcon {{
 
 /* Текстовые поля Material: заливка с нижней линией */
 QComboBox, QLineEdit {{
-    background: #E1E3E9;
+    background: #E8ECF2;
     border: 0;
     border-bottom: 2px solid #73777F;
     border-top-left-radius: 4px;
@@ -999,7 +1011,7 @@ QComboBox, QLineEdit {{
     min-height: 20px;
 }}
 QComboBox:focus, QLineEdit:focus {{
-    background: #E6E8EE;
+    background: #E8ECF2;
     border-bottom: 2px solid #0B57D0;
 }}
 QComboBox:disabled, QLineEdit:disabled {{ color: #8E9199; }}
@@ -1044,7 +1056,7 @@ QPushButton#Primary {{
 }}
 QPushButton#Primary:hover {{ background: #0842A0; }}
 QPushButton#Primary:pressed {{ background: #06327A; }}
-QPushButton#Primary:disabled {{ background: #E1E3E9; color: #A9ACB4; }}
+QPushButton#Primary:disabled {{ background: #E8ECF2; color: #A9ACB4; }}
 QPushButton#Tonal {{
     background: #D3E3FD;
     color: #041E49;
@@ -1055,7 +1067,7 @@ QPushButton#Tonal {{
 }}
 QPushButton#Tonal:hover {{ background: #C2D7FB; }}
 QPushButton#Tonal:pressed {{ background: #B0CBF7; }}
-QPushButton#Tonal:disabled {{ background: #E6E8EE; color: #A9ACB4; }}
+QPushButton#Tonal:disabled {{ background: #E8ECF2; color: #A9ACB4; }}
 QPushButton#Outlined {{
     background: transparent;
     color: #0B57D0;
@@ -1074,7 +1086,7 @@ QPushButton#OutlinedDanger {{
     font-weight: 600;
 }}
 QPushButton#OutlinedDanger:hover {{ background: rgba(186, 26, 26, 0.08); border-color: #BA1A1A; }}
-QPushButton#OutlinedDanger:disabled {{ color: #A9ACB4; border-color: #E1E3E9; background: transparent; }}
+QPushButton#OutlinedDanger:disabled {{ color: #A9ACB4; border-color: #E8ECF2; background: transparent; }}
 QPushButton#IconTonal {{
     background: #D3E3FD;
     border: 0;
@@ -1082,14 +1094,14 @@ QPushButton#IconTonal {{
     padding: 0;
 }}
 QPushButton#IconTonal:hover {{ background: #C2D7FB; }}
-QPushButton#IconTonal:disabled {{ background: #E6E8EE; }}
+QPushButton#IconTonal:disabled {{ background: #E8ECF2; }}
 QToolButton#IconButton {{
     background: transparent;
     border: 0;
     border-radius: 18px;
     padding: 0;
 }}
-QToolButton#IconButton:hover {{ background: #E1E3E9; }}
+QToolButton#IconButton:hover {{ background: #E8ECF2; }}
 QToolButton#IconButton:pressed {{ background: #D3E3FD; }}
 QToolButton#IconButton::menu-indicator {{ image: none; width: 0; }}
 QPushButton#Text {{
@@ -1131,7 +1143,7 @@ QCheckBox::indicator:checked:disabled {{ background: #C3C7CF; border-color: #C3C
 
 /* Прогресс */
 QProgressBar {{
-    background: #E1E3E9;
+    background: #E8ECF2;
     border: 0;
     border-radius: 2px;
     max-height: 4px;
@@ -1141,7 +1153,7 @@ QProgressBar::chunk {{ background: #0B57D0; border-radius: 2px; }}
 
 /* Журнал */
 QTextEdit#Log {{
-    background: #F2F3F9;
+    background: #F7F9FC;
     border: 0;
     border-radius: 12px;
     color: #1A1C1E;
@@ -1154,7 +1166,7 @@ QTextEdit#Log {{
 
 /* Чипы */
 QLabel#Chip {{
-    background: #E6E8EE;
+    background: #E8ECF2;
     color: #43474E;
     border-radius: 8px;
     padding: 5px 10px;
@@ -1163,7 +1175,7 @@ QLabel#Chip {{
 }}
 QLabel#Chip[state="busy"] {{ background: #D3E3FD; color: #041E49; }}
 QLabel#Chip[state="ok"] {{ background: #C4EED0; color: #0E5222; }}
-QLabel#Chip[state="error"] {{ background: #FFDAD6; color: #410002; }}
+QLabel#Chip[state="error"] {{ background: #F1F3F6; color: #7A1A16; }}
 
 QLabel#PinStatus {{ color: #73777F; font-size: 7.5pt; }}
 QLabel#PinStatus[state="ok"] {{ color: #146C2E; }}
@@ -1255,7 +1267,7 @@ class AboutDialog(QDialog):
             link.setTextFormat(Qt.RichText)
             link.setText(
                 f'<a href="{html.escape(url)}" '
-                f'style="color:#2F6BFF; text-decoration:none;">{html.escape(text)}</a>'
+                f'style="color:#0B57D0; text-decoration:none;">{html.escape(text)}</a>'
             )
             link.setOpenExternalLinks(True)
             link.setTextInteractionFlags(Qt.TextBrowserInteraction)
@@ -1273,7 +1285,7 @@ class AboutDialog(QDialog):
 
         footer = QHBoxLayout()
         site = QLabel(
-            f'<a href="{APP_WEBSITE}" style="color:#8190A5; text-decoration:none;">'
+            f'<a href="{APP_WEBSITE}" style="color:#73777F; text-decoration:none;">'
             f'{APP_WEBSITE.replace("https://", "")}</a>'
         )
         site.setObjectName("AboutNote")
@@ -1352,8 +1364,8 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(APP_QSS)
 
         root = QVBoxLayout(body)
-        root.setContentsMargins(16, 12, 16, 10)
-        root.setSpacing(8)
+        root.setContentsMargins(16, 18, 16, 22)
+        root.setSpacing(24)
 
         self.drop_zone = DropZone()
         self.drop_zone.folderDropped.connect(self.select_folder_path)
@@ -1427,7 +1439,7 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        layout.setSpacing(12)
 
         self.stat_total = StatCard("Всего документов")
         self.stat_todo = StatCard("К подписанию", accent=True)
@@ -1440,6 +1452,7 @@ class MainWindow(QMainWindow):
     def _build_settings(self) -> QFrame:
         card = QFrame()
         card.setObjectName("Card")
+        apply_elevation(card, blur=40, offset=10, alpha=135)
         outer = QVBoxLayout(card)
         outer.setContentsMargins(14, 10, 14, 8)
         outer.setSpacing(6)
@@ -1545,6 +1558,7 @@ class MainWindow(QMainWindow):
     def _build_actions(self) -> QFrame:
         card = QFrame()
         card.setObjectName("Card")
+        apply_elevation(card, blur=40, offset=10, alpha=135)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(14, 9, 14, 8)
         layout.setSpacing(6)
@@ -1595,6 +1609,7 @@ class MainWindow(QMainWindow):
     def _build_log(self) -> QFrame:
         card = QFrame()
         card.setObjectName("Card")
+        apply_elevation(card, blur=40, offset=10, alpha=135)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(14, 8, 14, 8)
         layout.setSpacing(5)
