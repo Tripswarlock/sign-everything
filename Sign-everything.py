@@ -612,6 +612,72 @@ def apply_elevation(widget: QWidget, blur: int = 18, offset: int = 4, alpha: int
     widget.setGraphicsEffect(effect)
 
 
+BUTTON_STYLES = {
+    "Primary": """
+QPushButton {
+    background: #0B57D0; color: #FFFFFF; border: 1px solid #0B57D0;
+    border-radius: 18px; padding: 9px 22px; font-size: 9pt; font-weight: 600;
+}
+QPushButton:hover { background: #0842A0; border-color: #0842A0; }
+QPushButton:pressed { background: #06327A; border-color: #06327A; }
+QPushButton:disabled { background: #E1E3E9; color: #A9ACB4; border-color: #E1E3E9; }
+""",
+    "Tonal": """
+QPushButton {
+    background: #D3E3FD; color: #041E49; border: 1px solid #D3E3FD;
+    border-radius: 18px; padding: 8px 16px; font-size: 8.5pt; font-weight: 600;
+}
+QPushButton:hover { background: #C2D7FB; border-color: #C2D7FB; }
+QPushButton:pressed { background: #B0CBF7; border-color: #B0CBF7; }
+QPushButton:disabled { background: #E6E8EE; color: #A9ACB4; border-color: #E6E8EE; }
+""",
+    "OutlinedDanger": """
+QPushButton {
+    background: transparent; color: #BA1A1A; border: 1px solid #C3C7CF;
+    border-radius: 18px; padding: 8px 18px; font-size: 8.5pt; font-weight: 600;
+}
+QPushButton:hover { background: rgba(186, 26, 26, 0.08); border-color: #BA1A1A; }
+QPushButton:disabled { color: #A9ACB4; border-color: #E1E3E9; background: transparent; }
+""",
+    "IconTonal": """
+QPushButton {
+    background: #D3E3FD; border: 1px solid #D3E3FD;
+    border-radius: 15px; padding: 0;
+}
+QPushButton:hover { background: #C2D7FB; border-color: #C2D7FB; }
+QPushButton:disabled { background: #E6E8EE; border-color: #E6E8EE; }
+""",
+    "Text": """
+QPushButton {
+    background: transparent; color: #0B57D0; border: 1px solid transparent;
+    border-radius: 14px; padding: 6px 10px; font-size: 8.5pt; font-weight: 600;
+}
+QPushButton:hover { background: rgba(11, 87, 208, 0.08); }
+""",
+    "TextDanger": """
+QPushButton {
+    background: transparent; color: #BA1A1A; border: 1px solid transparent;
+    border-radius: 14px; padding: 6px 8px; font-size: 8.5pt; font-weight: 500;
+}
+QPushButton:hover { background: rgba(186, 26, 26, 0.08); }
+""",
+}
+
+
+def apply_button_style(button: QPushButton, variant: str) -> None:
+    button.setStyleSheet(BUTTON_STYLES[variant])
+
+
+def apply_tool_button_style(button: QToolButton) -> None:
+    button.setStyleSheet(
+        "QToolButton { background: transparent; border: 1px solid transparent;"
+        " border-radius: 15px; padding: 0; }"
+        " QToolButton:hover { background: #E1E3E9; }"
+        " QToolButton:pressed { background: #D3E3FD; }"
+        " QToolButton::menu-indicator { image: none; width: 0; }"
+    )
+
+
 class ElidedLabel(QLabel):
     def __init__(self, text: str = "", parent=None):
         super().__init__(parent)
@@ -683,7 +749,7 @@ class DropZone(QFrame):
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(14, 10, 14, 10)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
 
         icon_label = QLabel()
         icon_label.setObjectName("DropIcon")
@@ -706,6 +772,7 @@ class DropZone(QFrame):
 
         self.choose_button = QPushButton("Выбрать")
         self.choose_button.setObjectName("Tonal")
+        apply_button_style(self.choose_button, "Tonal")
         self.choose_button.setCursor(Qt.PointingHandCursor)
         self.choose_button.clicked.connect(self.chooseClicked)
         layout.addWidget(self.choose_button)
@@ -923,7 +990,7 @@ QMenu {{
     background: #ECEEF4;
     color: #1A1C1E;
     border: 0;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 6px;
 }}
 QMenu::item {{ padding: 7px 20px; border-radius: 8px; font-size: 8.5pt; }}
@@ -940,15 +1007,15 @@ QLabel#BrandMark {{
     background: transparent;
     border: 0;
 }}
-QLabel#BrandTitle {{ color: #1A1C1E; font-size: 17pt; font-weight: 500; }}
-QLabel#BrandSubtitle {{ color: #43474E; font-size: 8pt; }}
+QLabel#BrandTitle {{ color: #1A1C1E; font-size: 13pt; font-weight: 500; }}
+QLabel#BrandSubtitle {{ color: #43474E; font-size: 7pt; }}
 QLabel#HeaderBadge {{
     background: #E6E8EE;
     border: 0;
     border-radius: 8px;
     color: #43474E;
-    padding: 5px 10px;
-    font-size: 8pt;
+    padding: 3px 8px;
+    font-size: 7pt;
     font-weight: 600;
 }}
 QLabel#HeaderBadge[state="warn"] {{ background: #FFE9C7; color: #6B4400; }}
@@ -958,12 +1025,12 @@ QLabel#HeaderBadge[state="ok"] {{ background: #C4EED0; color: #0E5222; }}
 QFrame#Card {{
     background: #ECEEF4;
     border: 0;
-    border-radius: 12px;
+    border-radius: 8px;
 }}
 QFrame#StatCard {{
     background: #ECEEF4;
     border: 0;
-    border-radius: 12px;
+    border-radius: 8px;
 }}
 QFrame#StatCard[accent="true"] {{ background: #D3E3FD; }}
 QLabel#CardTitle {{ color: #1A1C1E; font-size: 9pt; font-weight: 600; }}
@@ -977,7 +1044,7 @@ QLabel#StatCaption {{ color: #43474E; font-size: 7.5pt; }}
 QFrame#DropZone {{
     background: #F2F3F9;
     border: 1.5px dashed #C3C7CF;
-    border-radius: 12px;
+    border-radius: 8px;
 }}
 QFrame#DropZone[dragActive="true"] {{
     background: #D3E3FD;
@@ -1044,30 +1111,30 @@ QComboBox QAbstractItemView {{
 }}
 
 /* Кнопки */
-QPushButton {{ font-size: 8.5pt; font-weight: 500; }}
+QPushButton {{ font-size: 8.5pt; font-weight: 500; background: #0B57D0; color: #FFFFFF; border: 1px solid #0B57D0; border-radius: 20px; padding: 8px 16px; }}
 QPushButton#Primary {{
     background: #0B57D0;
     color: #FFFFFF;
-    border: 0;
+    border: 1px solid #0B57D0;
     border-radius: 20px;
     padding: 9px 22px;
     font-size: 9pt;
     font-weight: 600;
 }}
-QPushButton#Primary:hover {{ background: #0842A0; }}
-QPushButton#Primary:pressed {{ background: #06327A; }}
-QPushButton#Primary:disabled {{ background: #E1E3E9; color: #A9ACB4; }}
+QPushButton#Primary:hover {{ background: #0842A0; border-color: #0842A0; }}
+QPushButton#Primary:pressed {{ background: #06327A; border-color: #06327A; }}
+QPushButton#Primary:disabled {{ background: #E1E3E9; color: #A9ACB4; border-color: #E1E3E9; }}
 QPushButton#Tonal {{
     background: #D3E3FD;
     color: #041E49;
-    border: 0;
+    border: 1px solid #D3E3FD;
     border-radius: 20px;
     padding: 8px 16px;
     font-weight: 600;
 }}
-QPushButton#Tonal:hover {{ background: #C2D7FB; }}
-QPushButton#Tonal:pressed {{ background: #B0CBF7; }}
-QPushButton#Tonal:disabled {{ background: #E6E8EE; color: #A9ACB4; }}
+QPushButton#Tonal:hover {{ background: #C2D7FB; border-color: #C2D7FB; }}
+QPushButton#Tonal:pressed {{ background: #B0CBF7; border-color: #B0CBF7; }}
+QPushButton#Tonal:disabled {{ background: #E6E8EE; color: #A9ACB4; border-color: #E6E8EE; }}
 QPushButton#Outlined {{
     background: transparent;
     color: #0B57D0;
@@ -1086,18 +1153,18 @@ QPushButton#OutlinedDanger {{
     font-weight: 600;
 }}
 QPushButton#OutlinedDanger:hover {{ background: rgba(186, 26, 26, 0.08); border-color: #BA1A1A; }}
-QPushButton#OutlinedDanger:disabled {{ color: #A9ACB4; border-color: #E1E3E9; background: transparent; }}
+QPushButton#OutlinedDanger:disabled {{ color: #A9ACB4; border: 1px solid #E1E3E9; background: transparent; }}
 QPushButton#IconTonal {{
     background: #D3E3FD;
-    border: 0;
+    border: 1px solid #D3E3FD;
     border-radius: 16px;
     padding: 0;
 }}
-QPushButton#IconTonal:hover {{ background: #C2D7FB; }}
-QPushButton#IconTonal:disabled {{ background: #E6E8EE; }}
+QPushButton#IconTonal:hover {{ background: #C2D7FB; border-color: #C2D7FB; }}
+QPushButton#IconTonal:disabled {{ background: #E6E8EE; border-color: #E6E8EE; }}
 QToolButton#IconButton {{
     background: transparent;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: 18px;
     padding: 0;
 }}
@@ -1107,7 +1174,7 @@ QToolButton#IconButton::menu-indicator {{ image: none; width: 0; }}
 QPushButton#Text {{
     background: transparent;
     color: #0B57D0;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: 16px;
     padding: 6px 10px;
     font-weight: 600;
@@ -1116,7 +1183,7 @@ QPushButton#Text:hover {{ background: rgba(11, 87, 208, 0.08); }}
 QPushButton#TextDanger {{
     background: transparent;
     color: #BA1A1A;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: 16px;
     padding: 6px 8px;
     font-weight: 500;
@@ -1155,7 +1222,7 @@ QProgressBar::chunk {{ background: #0B57D0; border-radius: 2px; }}
 QTextEdit#Log {{
     background: #F2F3F9;
     border: 0;
-    border-radius: 12px;
+    border-radius: 8px;
     color: #1A1C1E;
     font-family: "DejaVu Sans Mono";
     font-size: 8pt;
@@ -1296,6 +1363,7 @@ class AboutDialog(QDialog):
         footer.addStretch(1)
         close_btn = QPushButton("Закрыть")
         close_btn.setObjectName("Tonal")
+        apply_button_style(close_btn, "Tonal")
         close_btn.setCursor(Qt.PointingHandCursor)
         close_btn.setFixedWidth(96)
         close_btn.clicked.connect(self.accept)
@@ -1389,16 +1457,16 @@ class MainWindow(QMainWindow):
     def _build_header(self) -> QFrame:
         header = QFrame()
         header.setObjectName("Header")
-        header.setFixedHeight(72)
+        header.setFixedHeight(48)
         layout = QHBoxLayout(header)
-        layout.setContentsMargins(16, 10, 14, 10)
-        layout.setSpacing(10)
+        layout.setContentsMargins(14, 6, 12, 6)
+        layout.setSpacing(8)
 
         mark = QLabel()
         mark.setObjectName("BrandMark")
         mark.setAlignment(Qt.AlignCenter)
-        mark.setFixedSize(40, 40)
-        mark.setPixmap(make_logo_pixmap(40))
+        mark.setFixedSize(30, 30)
+        mark.setPixmap(make_logo_pixmap(30))
         layout.addWidget(mark)
 
         text_layout = QVBoxLayout()
@@ -1425,9 +1493,10 @@ class MainWindow(QMainWindow):
         overflow_menu.addAction(self.about_action)
         self.more_btn = QToolButton()
         self.more_btn.setObjectName("IconButton")
+        apply_tool_button_style(self.more_btn)
         self.more_btn.setIcon(make_more_icon())
-        self.more_btn.setIconSize(QSize(20, 20))
-        self.more_btn.setFixedSize(36, 36)
+        self.more_btn.setIconSize(QSize(18, 18))
+        self.more_btn.setFixedSize(30, 30)
         self.more_btn.setCursor(Qt.PointingHandCursor)
         self.more_btn.setPopupMode(QToolButton.InstantPopup)
         self.more_btn.setMenu(overflow_menu)
@@ -1439,7 +1508,7 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
 
         self.stat_total = StatCard("Всего документов")
         self.stat_todo = StatCard("К подписанию", accent=True)
@@ -1490,6 +1559,7 @@ class MainWindow(QMainWindow):
 
         self.refresh_btn = QPushButton()
         self.refresh_btn.setObjectName("IconTonal")
+        apply_button_style(self.refresh_btn, "IconTonal")
         self.refresh_btn.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.refresh_btn.setIconSize(QSize(14, 14))
         self.refresh_btn.setCursor(Qt.PointingHandCursor)
@@ -1512,6 +1582,7 @@ class MainWindow(QMainWindow):
 
         self.eye_btn = QPushButton()
         self.eye_btn.setObjectName("IconTonal")
+        apply_button_style(self.eye_btn, "IconTonal")
         self.eye_btn.setCheckable(True)
         self.eye_btn.setCursor(Qt.PointingHandCursor)
         self.eye_btn.setFixedSize(30, 30)
@@ -1535,6 +1606,7 @@ class MainWindow(QMainWindow):
 
         self.forget_btn = QPushButton("Забыть")
         self.forget_btn.setObjectName("TextDanger")
+        apply_button_style(self.forget_btn, "TextDanger")
         self.forget_btn.setCursor(Qt.PointingHandCursor)
         self.forget_btn.setToolTip("Удалить сохранённый PIN и очистить поле")
         self.forget_btn.clicked.connect(self._forget_pin)
@@ -1570,12 +1642,14 @@ class MainWindow(QMainWindow):
         self.btn_sign.setCursor(Qt.PointingHandCursor)
         self.btn_sign.setMinimumHeight(36)
         self.btn_sign.setMinimumWidth(160)
+        apply_button_style(self.btn_sign, "Primary")
         self.btn_sign.setEnabled(False)
         self.btn_sign.clicked.connect(self.start_signing)
         row.addWidget(self.btn_sign)
 
         self.btn_stop = QPushButton("Остановить")
         self.btn_stop.setObjectName("OutlinedDanger")
+        apply_button_style(self.btn_stop, "OutlinedDanger")
         self.btn_stop.setCursor(Qt.PointingHandCursor)
         self.btn_stop.setMinimumHeight(36)
         self.btn_stop.setEnabled(False)
@@ -1622,12 +1696,14 @@ class MainWindow(QMainWindow):
 
         self.copy_btn = QPushButton("Копировать")
         self.copy_btn.setObjectName("Text")
+        apply_button_style(self.copy_btn, "Text")
         self.copy_btn.setCursor(Qt.PointingHandCursor)
         self.copy_btn.clicked.connect(self._copy_log)
         header.addWidget(self.copy_btn)
 
         self.clear_btn = QPushButton("Очистить")
         self.clear_btn.setObjectName("Text")
+        apply_button_style(self.clear_btn, "Text")
         self.clear_btn.setCursor(Qt.PointingHandCursor)
         self.clear_btn.clicked.connect(self._clear_log)
         header.addWidget(self.clear_btn)
