@@ -999,7 +999,7 @@ QMenu::item:selected {{ background: #F1F3F5; color: #0F1115; }}
 QFrame#Header {{
     background: #FFFFFF;
     border: 0;
-    border-bottom: 1px solid #0000001A;
+    border-bottom: 1px solid #B8C1CE;
     border-radius: 0;
 }}
 QLabel#BrandMark {{
@@ -1031,12 +1031,12 @@ QLabel#HeaderBadge[state="ok"] {{
 /* Карточки */
 QFrame#Card {{
     background: #FFFFFF;
-    border: 1px solid #0000001A;
+    border: 1px solid #B8C1CE;
     border-radius: 12px;
 }}
 QFrame#StatCard {{
     background: #F9FAFB;
-    border: 1px solid #0000001A;
+    border: 1px solid #B8C1CE;
     border-radius: 8px;
 }}
 QFrame#StatCard[accent="true"] {{
@@ -1054,16 +1054,16 @@ QLabel#StatCaption[accent="true"] {{ color: #24406B; }}
 /* Зона перетаскивания */
 QFrame#DropZone {{
     background: #FFFFFF;
-    border: 1px dashed #00000029;
+    border: 1.5px dashed #6B7280;
     border-radius: 12px;
 }}
 QFrame#DropZone[dragActive="true"] {{
     background: #F9FAFB;
-    border: 1px solid #0F1115;
+    border: 2px dashed #0F1115;
 }}
 QFrame#DropZone[selected="true"] {{
     background: #F9FAFB;
-    border: 1px solid #0000001A;
+    border: 1.5px dashed #6B7280;
 }}
 QLabel#DropTitle {{ color: #0F1115; font-size: 9.5pt; font-weight: 600; }}
 QLabel#DropHint {{ color: #61666B; font-size: 7.5pt; }}
@@ -1223,7 +1223,7 @@ QProgressBar::chunk {{ background: #0F1115; border-radius: 2px; }}
 /* Журнал */
 QTextEdit#Log {{
     background: #F9FAFB;
-    border: 1px solid #0000001A;
+    border: 1px solid #B8C1CE;
     border-radius: 8px;
     color: #1B1B1C;
     font-family: "DejaVu Sans Mono";
