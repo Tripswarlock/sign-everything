@@ -21,18 +21,21 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from PyQt5.QtCore import QSettings, QSize, Qt, QThread, pyqtSignal
+from PyQt5.QtCore import QRect, QRectF, QSettings, QSize, Qt, QThread, pyqtSignal
 from PyQt5.QtGui import (
     QColor,
     QFont,
+    QFontDatabase,
     QFontMetrics,
     QIcon,
+    QImage,
     QPainter,
     QPainterPath,
     QPen,
@@ -52,6 +55,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -59,6 +63,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QStyle,
     QTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -633,10 +638,11 @@ class ElidedLabel(QLabel):
 class StatCard(QFrame):
     def __init__(self, caption: str, accent: bool = False, parent=None):
         super().__init__(parent)
-        self.setObjectName("Card")
+        self.setObjectName("StatCard")
+        self.setProperty("accent", "true" if accent else "false")
         self.setMinimumHeight(58)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 7, 10, 6)
+        layout.setContentsMargins(12, 8, 12, 7)
         layout.setSpacing(0)
 
         self.value_label = QLabel("0")
@@ -688,7 +694,7 @@ class DropZone(QFrame):
         layout.addLayout(text_layout, 1)
 
         self.choose_button = QPushButton("Выбрать")
-        self.choose_button.setObjectName("Secondary")
+        self.choose_button.setObjectName("Tonal")
         self.choose_button.setCursor(Qt.PointingHandCursor)
         self.choose_button.clicked.connect(self.chooseClicked)
         layout.addWidget(self.choose_button)
@@ -742,13 +748,31 @@ def make_app_icon() -> QIcon:
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.Antialiasing)
     painter.setPen(Qt.NoPen)
-    painter.setBrush(QColor("#2F6BFF"))
+    painter.setBrush(QColor("#0B57D0"))
     painter.drawRoundedRect(2, 2, 60, 60, 14, 14)
     painter.setPen(QColor("#FFFFFF"))
     painter.setFont(QFont("DejaVu Sans", 28, QFont.Bold))
     painter.drawText(pixmap.rect(), Qt.AlignCenter, "S")
     painter.end()
     return QIcon(pixmap)
+
+
+def make_logo_pixmap(size: int, background: str = "#0B57D0", foreground: str = "#FFFFFF") -> QPixmap:
+    """Круглый логотип с буквой S в духе Material 3."""
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setPen(Qt.NoPen)
+    painter.setBrush(QColor(background))
+    painter.drawEllipse(0, 0, size, size)
+    painter.setPen(QColor(foreground))
+    font = QFont("DejaVu Sans", 10, QFont.Bold)
+    font.setPixelSize(max(12, int(size * 0.5)))
+    painter.setFont(font)
+    painter.drawText(pixmap.rect(), Qt.AlignCenter, "S")
+    painter.end()
+    return pixmap
 
 
 def make_eye_icon(visible: bool) -> QIcon:
@@ -782,242 +806,384 @@ def make_eye_icon(visible: bool) -> QIcon:
     return QIcon(pixmap)
 
 
-# ---------------------------------------------------------------------------
-# Главное окно
-# ---------------------------------------------------------------------------
+def make_more_icon() -> QIcon:
+    """Вертикальное троеточие для overflow-меню Material."""
+    pixmap = QPixmap(36, 36)
+    pixmap.fill(Qt.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setPen(Qt.NoPen)
+    painter.setBrush(QColor("#43474E"))
+    for y in (10, 18, 26):
+        painter.drawEllipse(16, y - 2, 4, 4)
+    painter.end()
+    return QIcon(pixmap)
 
-APP_QSS = """
-QMainWindow, QWidget#Root, QDialog { background: #F4F7FB; }
-QScrollArea { background: transparent; border: 0; }
-QScrollBar:vertical {
-    background: transparent;
-    width: 9px;
-    margin: 2px;
-}
-QScrollBar::handle:vertical {
-    background: #C9D5E6;
-    min-height: 28px;
+UI_ASSET_DIR = Path(tempfile.gettempdir()) / "sign-everything-ui"
+
+
+def _ui_asset(name: str) -> str:
+    return (UI_ASSET_DIR / name).as_posix()
+
+
+def _ensure_ui_assets() -> None:
+    """Готовит простые растровые иконки для QSS (галочка, шеврон)."""
+    UI_ASSET_DIR.mkdir(parents=True, exist_ok=True)
+
+    check = QImage(40, 40, QImage.Format_ARGB32)
+    check.fill(Qt.transparent)
+    painter = QPainter(check)
+    painter.setRenderHint(QPainter.Antialiasing)
+    pen = QPen(QColor("#FFFFFF"), 4.5)
+    pen.setCapStyle(Qt.RoundCap)
+    pen.setJoinStyle(Qt.RoundJoin)
+    painter.setPen(pen)
+    path = QPainterPath()
+    path.moveTo(9, 21)
+    path.lineTo(17, 29)
+    path.lineTo(31, 12)
+    painter.drawPath(path)
+    painter.end()
+    check.save(_ui_asset("check.png"))
+
+    chevron = QImage(32, 32, QImage.Format_ARGB32)
+    chevron.fill(Qt.transparent)
+    painter = QPainter(chevron)
+    painter.setRenderHint(QPainter.Antialiasing)
+    pen = QPen(QColor("#43474E"), 2.6)
+    pen.setCapStyle(Qt.RoundCap)
+    pen.setJoinStyle(Qt.RoundJoin)
+    painter.setPen(pen)
+    arrow = QPainterPath()
+    arrow.moveTo(9, 13)
+    arrow.lineTo(16, 20)
+    arrow.lineTo(23, 13)
+    painter.drawPath(arrow)
+    painter.end()
+    chevron.save(_ui_asset("chevron.png"))
+
+
+def build_app_qss() -> str:
+    _ensure_ui_assets()
+    check = _ui_asset("check.png")
+    chevron = _ui_asset("chevron.png")
+    return f"""
+/* Material 3 — базовые поверхности */
+QMainWindow, QWidget#Root, QDialog {{ background: #F8F9FF; }}
+QToolTip {{
+    background: #1A1C1E;
+    color: #F8F9FF;
+    border: 0;
     border-radius: 4px;
-}
-QScrollBar::handle:vertical:hover { background: #AFC0D8; }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
-QMenuBar {
-    background: #F4F7FB;
-    color: #40536C;
-    font-size: 8pt;
-    padding: 1px 4px;
-    border: 0;
-}
-QMenuBar::item {
-    background: transparent;
-    padding: 3px 8px;
-    border-radius: 6px;
-}
-QMenuBar::item:selected { background: #EAF1FF; color: #2F6BFF; }
-QMenu {
-    background: #FFFFFF;
-    color: #172033;
-    border: 1px solid #DCE4EF;
-    padding: 4px;
-}
-QMenu::item { padding: 6px 18px; border-radius: 5px; }
-QMenu::item:selected { background: #EAF1FF; color: #2F6BFF; }
-QFrame#Header {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                stop:0 #102C55, stop:1 #2356A4);
-    border-radius: 14px;
-}
-QLabel#BrandMark {
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 9px;
-    color: #FFFFFF;
-    font-size: 13pt;
-    font-weight: 700;
-}
-QLabel#BrandTitle { color: #FFFFFF; font-size: 14pt; font-weight: 700; }
-QLabel#BrandSubtitle { color: rgba(255, 255, 255, 0.72); font-size: 7.5pt; }
-QLabel#HeaderBadge {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.20);
-    border-radius: 9px;
-    color: #FFFFFF;
-    padding: 3px 8px;
-    font-size: 7pt;
-    font-weight: 600;
-}
-QLabel#HeaderBadge[state="warn"] {
-    background: rgba(255, 190, 92, 0.20);
-    border-color: rgba(255, 210, 140, 0.45);
-}
-QFrame#Card {
-    background: #FFFFFF;
-    border: 1px solid #E4EAF3;
-    border-radius: 12px;
-}
-QLabel#CardTitle { color: #172033; font-size: 8.5pt; font-weight: 700; }
-QLabel#FieldLabel { color: #4A5A70; font-size: 7.5pt; font-weight: 600; }
-QLabel#Hint { color: #8190A5; font-size: 7pt; }
-QLabel#StatValue { color: #172033; font-size: 15pt; font-weight: 700; }
-QLabel#StatValue[accent="true"] { color: #2F6BFF; }
-QLabel#StatCaption { color: #7A899E; font-size: 7pt; }
-QFrame#DropZone {
-    background: #FFFFFF;
-    border: 2px dashed #C8D6E8;
-    border-radius: 12px;
-}
-QFrame#DropZone[dragActive="true"] {
-    background: #F3F7FF;
-    border-color: #2F6BFF;
-}
-QFrame#DropZone[selected="true"] {
-    background: #F8FAFF;
-    border: 1px solid #CFE0FF;
-}
-QLabel#DropTitle { color: #172033; font-size: 9.5pt; font-weight: 700; }
-QLabel#DropHint { color: #7B8BA1; font-size: 7.5pt; }
-QLabel#DropIcon {
-    background: #EAF1FF;
-    border-radius: 10px;
-}
-QComboBox, QLineEdit {
-    background: #F8FAFD;
-    border: 1px solid #DCE4EF;
-    border-radius: 7px;
     padding: 5px 8px;
-    color: #172033;
+    font-size: 8pt;
+}}
+QScrollArea {{ background: transparent; border: 0; }}
+QScrollBar:vertical {{
+    background: transparent;
+    width: 8px;
+    margin: 2px;
+}}
+QScrollBar::handle:vertical {{
+    background: #C3C7CF;
+    min-height: 32px;
+    border-radius: 4px;
+}}
+QScrollBar::handle:vertical:hover {{ background: #73777F; }}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: transparent; }}
+
+/* Меню */
+QMenuBar {{
+    background: #F8F9FF;
+    color: #43474E;
     font-size: 8.5pt;
-    selection-background-color: #2F6BFF;
-    min-height: 16px;
-}
-QComboBox:focus, QLineEdit:focus {
-    background: #FFFFFF;
-    border: 1px solid #2F6BFF;
-}
-QComboBox QAbstractItemView {
-    background: #FFFFFF;
-    border: 1px solid #DCE4EF;
-    selection-background-color: #EAF1FF;
-    selection-color: #172033;
-    padding: 4px;
-}
-QComboBox QLineEdit {
+    padding: 2px 6px;
+    border: 0;
+}}
+QMenuBar::item {{
+    background: transparent;
+    padding: 4px 10px;
+    border-radius: 8px;
+}}
+QMenuBar::item:selected {{ background: #E1E3E9; color: #1A1C1E; }}
+QMenu {{
+    background: #ECEEF4;
+    color: #1A1C1E;
+    border: 0;
+    border-radius: 12px;
+    padding: 6px;
+}}
+QMenu::item {{ padding: 7px 20px; border-radius: 8px; font-size: 8.5pt; }}
+QMenu::item:selected {{ background: #D3E3FD; color: #041E49; }}
+
+/* Верхняя панель (top app bar) */
+QFrame#Header {{
+    background: #F8F9FF;
+    border: 0;
+    border-bottom: 1px solid #C3C7CF;
+    border-radius: 0;
+}}
+QLabel#BrandMark {{
     background: transparent;
     border: 0;
+}}
+QLabel#BrandTitle {{ color: #1A1C1E; font-size: 17pt; font-weight: 500; }}
+QLabel#BrandSubtitle {{ color: #43474E; font-size: 8pt; }}
+QLabel#HeaderBadge {{
+    background: #E6E8EE;
+    border: 0;
+    border-radius: 8px;
+    color: #43474E;
+    padding: 5px 10px;
+    font-size: 8pt;
+    font-weight: 600;
+}}
+QLabel#HeaderBadge[state="warn"] {{ background: #FFE9C7; color: #6B4400; }}
+QLabel#HeaderBadge[state="ok"] {{ background: #C4EED0; color: #0E5222; }}
+
+/* Карточки */
+QFrame#Card {{
+    background: #ECEEF4;
+    border: 0;
+    border-radius: 12px;
+}}
+QFrame#StatCard {{
+    background: #ECEEF4;
+    border: 0;
+    border-radius: 12px;
+}}
+QFrame#StatCard[accent="true"] {{ background: #D3E3FD; }}
+QLabel#CardTitle {{ color: #1A1C1E; font-size: 9pt; font-weight: 600; }}
+QLabel#FieldLabel {{ color: #43474E; font-size: 8pt; font-weight: 500; }}
+QLabel#Hint {{ color: #73777F; font-size: 7.5pt; }}
+QLabel#StatValue {{ color: #1A1C1E; font-size: 20pt; font-weight: 400; }}
+QLabel#StatValue[accent="true"] {{ color: #041E49; }}
+QLabel#StatCaption {{ color: #43474E; font-size: 7.5pt; }}
+
+/* Зона перетаскивания */
+QFrame#DropZone {{
+    background: #F2F3F9;
+    border: 1.5px dashed #C3C7CF;
+    border-radius: 12px;
+}}
+QFrame#DropZone[dragActive="true"] {{
+    background: #D3E3FD;
+    border: 2px dashed #0B57D0;
+}}
+QFrame#DropZone[selected="true"] {{
+    background: #ECEEF4;
+    border: 1px solid #C3C7CF;
+}}
+QLabel#DropTitle {{ color: #1A1C1E; font-size: 9.5pt; font-weight: 500; }}
+QLabel#DropHint {{ color: #43474E; font-size: 7.5pt; }}
+QLabel#DropIcon {{
+    background: #D3E3FD;
+    border-radius: 21px;
+}}
+
+/* Текстовые поля Material: заливка с нижней линией */
+QComboBox, QLineEdit {{
+    background: #E1E3E9;
+    border: 0;
+    border-bottom: 2px solid #73777F;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding: 5px 10px;
+    color: #1A1C1E;
+    font-size: 8.5pt;
+    selection-background-color: #0B57D0;
+    selection-color: #FFFFFF;
+    min-height: 20px;
+}}
+QComboBox:focus, QLineEdit:focus {{
+    background: #E6E8EE;
+    border-bottom: 2px solid #0B57D0;
+}}
+QComboBox:disabled, QLineEdit:disabled {{ color: #8E9199; }}
+QComboBox QLineEdit {{
+    background: transparent;
+    border: 0;
+    border-radius: 0;
     padding: 0;
     min-height: 0;
-}
-QComboBox::drop-down {
+}}
+QComboBox::drop-down {{
     border: 0;
-    width: 24px;
-}
-QPushButton {
-    font-family: "DejaVu Sans";
-    font-size: 8pt;
-}
-QPushButton#Secondary {
-    background: #F1F5FB;
-    color: #24405F;
-    border: 1px solid #DCE5F1;
-    border-radius: 7px;
-    padding: 6px 10px;
-    font-weight: 600;
-}
-QPushButton#Secondary:hover { background: #E8EFF9; }
-QPushButton#Secondary:disabled { color: #A5B1C2; background: #F6F8FB; }
-QPushButton#Primary {
-    background: #2F6BFF;
+    width: 28px;
+}}
+QComboBox::down-arrow {{
+    image: url("{chevron}");
+    width: 16px;
+    height: 16px;
+}}
+QComboBox QAbstractItemView {{
+    background: #FFFFFF;
+    color: #1A1C1E;
+    border: 0;
+    border-radius: 8px;
+    padding: 6px;
+    selection-background-color: #D3E3FD;
+    selection-color: #041E49;
+    outline: 0;
+    font-size: 8.5pt;
+}}
+
+/* Кнопки */
+QPushButton {{ font-size: 8.5pt; font-weight: 500; }}
+QPushButton#Primary {{
+    background: #0B57D0;
     color: #FFFFFF;
     border: 0;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 8.5pt;
-    font-weight: 700;
-}
-QPushButton#Primary:hover { background: #1F56DB; }
-QPushButton#Primary:pressed { background: #1747BA; }
-QPushButton#Primary:disabled { background: #C9D7EF; color: #F5F8FD; }
-QPushButton#Danger {
-    background: #FFF2F3;
-    color: #C43A4C;
-    border: 1px solid #F4CDD3;
-    border-radius: 7px;
-    padding: 6px 12px;
+    border-radius: 20px;
+    padding: 9px 22px;
+    font-size: 9pt;
     font-weight: 600;
-}
-QPushButton#Danger:hover { background: #FFE7EA; }
-QPushButton#Danger:disabled {
-    background: #F7F8FA; color: #B6C0CD; border-color: #E6EAF0;
-}
-QPushButton#EyeButton {
-    background: transparent;
+}}
+QPushButton#Primary:hover {{ background: #0842A0; }}
+QPushButton#Primary:pressed {{ background: #06327A; }}
+QPushButton#Primary:disabled {{ background: #E1E3E9; color: #A9ACB4; }}
+QPushButton#Tonal {{
+    background: #D3E3FD;
+    color: #041E49;
     border: 0;
-    border-radius: 6px;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 600;
+}}
+QPushButton#Tonal:hover {{ background: #C2D7FB; }}
+QPushButton#Tonal:pressed {{ background: #B0CBF7; }}
+QPushButton#Tonal:disabled {{ background: #E6E8EE; color: #A9ACB4; }}
+QPushButton#Outlined {{
+    background: transparent;
+    color: #0B57D0;
+    border: 1px solid #73777F;
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-weight: 600;
+}}
+QPushButton#Outlined:hover {{ background: rgba(11, 87, 208, 0.08); }}
+QPushButton#OutlinedDanger {{
+    background: transparent;
+    color: #BA1A1A;
+    border: 1px solid #C3C7CF;
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-weight: 600;
+}}
+QPushButton#OutlinedDanger:hover {{ background: rgba(186, 26, 26, 0.08); border-color: #BA1A1A; }}
+QPushButton#OutlinedDanger:disabled {{ color: #A9ACB4; border-color: #E1E3E9; background: transparent; }}
+QPushButton#IconTonal {{
+    background: #D3E3FD;
+    border: 0;
+    border-radius: 16px;
     padding: 0;
-}
-QPushButton#EyeButton:hover { background: #EEF4FF; }
-QPushButton#EyeButton:checked { background: #EAF1FF; }
-QPushButton#Ghost {
+}}
+QPushButton#IconTonal:hover {{ background: #C2D7FB; }}
+QPushButton#IconTonal:disabled {{ background: #E6E8EE; }}
+QToolButton#IconButton {{
     background: transparent;
-    color: #5E7089;
     border: 0;
-    border-radius: 6px;
-    padding: 5px 6px;
-}
-QPushButton#Ghost:hover { color: #2F6BFF; background: #EEF4FF; }
-QPushButton#Link {
+    border-radius: 18px;
+    padding: 0;
+}}
+QToolButton#IconButton:hover {{ background: #E1E3E9; }}
+QToolButton#IconButton:pressed {{ background: #D3E3FD; }}
+QToolButton#IconButton::menu-indicator {{ image: none; width: 0; }}
+QPushButton#Text {{
     background: transparent;
-    color: #5E7089;
+    color: #0B57D0;
     border: 0;
-    padding: 3px 1px;
-    text-decoration: underline;
-}
-QPushButton#Link:hover { color: #C43A4C; }
-QCheckBox { color: #4A5A70; font-size: 8pt; spacing: 6px; }
-QProgressBar {
-    background: #E8EEF8;
+    border-radius: 16px;
+    padding: 6px 10px;
+    font-weight: 600;
+}}
+QPushButton#Text:hover {{ background: rgba(11, 87, 208, 0.08); }}
+QPushButton#TextDanger {{
+    background: transparent;
+    color: #BA1A1A;
     border: 0;
-    border-radius: 3px;
-    max-height: 6px;
-    min-height: 6px;
-}
-QProgressBar::chunk { background: #2F6BFF; border-radius: 3px; }
-QTextEdit#Log {
-    background: #F8FAFD;
-    border: 1px solid #E1E8F2;
-    border-radius: 8px;
-    color: #33465E;
+    border-radius: 16px;
+    padding: 6px 8px;
+    font-weight: 500;
+}}
+QPushButton#TextDanger:hover {{ background: rgba(186, 26, 26, 0.08); }}
+
+/* Чекбокс */
+QCheckBox {{ color: #1A1C1E; font-size: 8.5pt; spacing: 8px; }}
+QCheckBox::indicator {{
+    width: 18px;
+    height: 18px;
+    border: 2px solid #43474E;
+    border-radius: 2px;
+    background: transparent;
+}}
+QCheckBox::indicator:hover {{ border-color: #0B57D0; }}
+QCheckBox::indicator:checked {{
+    background: #0B57D0;
+    border: 2px solid #0B57D0;
+    image: url("{check}");
+}}
+QCheckBox::indicator:disabled {{ border-color: #C3C7CF; }}
+QCheckBox::indicator:checked:disabled {{ background: #C3C7CF; border-color: #C3C7CF; }}
+
+/* Прогресс */
+QProgressBar {{
+    background: #E1E3E9;
+    border: 0;
+    border-radius: 2px;
+    max-height: 4px;
+    min-height: 4px;
+}}
+QProgressBar::chunk {{ background: #0B57D0; border-radius: 2px; }}
+
+/* Журнал */
+QTextEdit#Log {{
+    background: #F2F3F9;
+    border: 0;
+    border-radius: 12px;
+    color: #1A1C1E;
     font-family: "DejaVu Sans Mono";
-    font-size: 7.5pt;
-    padding: 6px;
-    selection-background-color: #D8E5FF;
-}
-QLabel#Chip {
-    background: #EDF2F9;
-    color: #607089;
+    font-size: 8pt;
+    padding: 10px;
+    selection-background-color: #D3E3FD;
+    selection-color: #041E49;
+}}
+
+/* Чипы */
+QLabel#Chip {{
+    background: #E6E8EE;
+    color: #43474E;
     border-radius: 8px;
-    padding: 4px 8px;
-    font-size: 7pt;
-    font-weight: 700;
-}
-QLabel#Chip[state="busy"] { background: #EAF1FF; color: #2F6BFF; }
-QLabel#Chip[state="ok"] { background: #E8F7F1; color: #0F8A64; }
-QLabel#Chip[state="error"] { background: #FFF0F2; color: #C43A4C; }
-QLabel#PinStatus { color: #8190A5; font-size: 7pt; }
-QLabel#PinStatus[state="ok"] { color: #0F8A64; }
-QLabel#PinStatus[state="warn"] { color: #B26A00; }
-QLabel#PinStatus[state="error"] { color: #C43A4C; }
-QLabel#CurrentFile { color: #8190A5; font-size: 7pt; }
-QLabel#Percent { color: #40536C; font-size: 8pt; font-weight: 700; }
-QFrame#Separator { background: #E4EAF3; border: 0; }
-QLabel#AboutTitle { color: #172033; font-size: 16pt; font-weight: 700; }
-QLabel#AboutVersion { color: #8190A5; font-size: 8pt; }
-QLabel#AboutDescription { color: #40536C; font-size: 8.5pt; }
-QLabel#AboutCaption { color: #8190A5; font-size: 8pt; }
-QLabel#AboutLink { color: #2F6BFF; font-size: 8.5pt; }
-QLabel#AboutNote { color: #8190A5; font-size: 7.5pt; }
+    padding: 5px 10px;
+    font-size: 8pt;
+    font-weight: 600;
+}}
+QLabel#Chip[state="busy"] {{ background: #D3E3FD; color: #041E49; }}
+QLabel#Chip[state="ok"] {{ background: #C4EED0; color: #0E5222; }}
+QLabel#Chip[state="error"] {{ background: #FFDAD6; color: #410002; }}
+
+QLabel#PinStatus {{ color: #73777F; font-size: 7.5pt; }}
+QLabel#PinStatus[state="ok"] {{ color: #146C2E; }}
+QLabel#PinStatus[state="warn"] {{ color: #8A5300; }}
+QLabel#PinStatus[state="error"] {{ color: #BA1A1A; }}
+QLabel#CurrentFile {{ color: #73777F; font-size: 7.5pt; }}
+QLabel#Percent {{ color: #1A1C1E; font-size: 8.5pt; font-weight: 600; }}
+QFrame#Separator {{ background: #C3C7CF; border: 0; }}
+
+/* О программе */
+QLabel#AboutTitle {{ color: #1A1C1E; font-size: 17pt; font-weight: 400; }}
+QLabel#AboutVersion {{ color: #43474E; font-size: 8.5pt; }}
+QLabel#AboutDescription {{ color: #43474E; font-size: 9pt; }}
+QLabel#AboutCaption {{ color: #73777F; font-size: 8pt; }}
+QLabel#AboutLink {{ color: #0B57D0; font-size: 8.5pt; }}
+QLabel#AboutNote {{ color: #73777F; font-size: 7.5pt; }}
 """
+
+
+APP_QSS = build_app_qss()
 
 
 class AboutDialog(QDialog):
@@ -1040,7 +1206,7 @@ class AboutDialog(QDialog):
         header.setSpacing(14)
         icon = QLabel()
         icon.setFixedSize(54, 54)
-        icon.setPixmap(make_app_icon().pixmap(54, 54))
+        icon.setPixmap(make_logo_pixmap(54))
         header.addWidget(icon)
 
         title_box = QVBoxLayout()
@@ -1117,7 +1283,7 @@ class AboutDialog(QDialog):
         footer.addWidget(site)
         footer.addStretch(1)
         close_btn = QPushButton("Закрыть")
-        close_btn.setObjectName("Secondary")
+        close_btn.setObjectName("Tonal")
         close_btn.setCursor(Qt.PointingHandCursor)
         close_btn.setFixedWidth(96)
         close_btn.clicked.connect(self.accept)
@@ -1162,7 +1328,14 @@ class MainWindow(QMainWindow):
     # ---- построение интерфейса -------------------------------------------------
 
     def _build_ui(self) -> None:
-        self._build_menu()
+        self._setup_actions()
+
+        central = QWidget()
+        central.setObjectName("Central")
+        outer = QVBoxLayout(central)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        outer.addWidget(self._build_header())
 
         body = QWidget()
         body.setObjectName("Root")
@@ -1173,14 +1346,15 @@ class MainWindow(QMainWindow):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setWidget(body)
         scroll.viewport().setAutoFillBackground(False)
-        self.setCentralWidget(scroll)
+        outer.addWidget(scroll, 1)
+
+        self.setCentralWidget(central)
         self.setStyleSheet(APP_QSS)
 
         root = QVBoxLayout(body)
         root.setContentsMargins(16, 12, 16, 10)
         root.setSpacing(8)
 
-        root.addWidget(self._build_header())
         self.drop_zone = DropZone()
         self.drop_zone.folderDropped.connect(self.select_folder_path)
         self.drop_zone.chooseClicked.connect(self.select_folder)
@@ -1190,15 +1364,11 @@ class MainWindow(QMainWindow):
         root.addWidget(self._build_actions())
         root.addWidget(self._build_log(), 1)
 
-    def _build_menu(self) -> None:
-        menu_bar = self.menuBar()
-        menu_bar.setObjectName("MenuBar")
-        help_menu = menu_bar.addMenu("Справка")
-
-        about_action = QAction("О программе", self)
-        about_action.setShortcut("F1")
-        about_action.triggered.connect(self.show_about)
-        help_menu.addAction(about_action)
+    def _setup_actions(self) -> None:
+        self.about_action = QAction("О программе", self)
+        self.about_action.setShortcut("F1")
+        self.about_action.triggered.connect(self.show_about)
+        self.addAction(self.about_action)
 
     def show_about(self) -> None:
         dialog = AboutDialog(self)
@@ -1212,10 +1382,11 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(16, 10, 14, 10)
         layout.setSpacing(10)
 
-        mark = QLabel("S")
+        mark = QLabel()
         mark.setObjectName("BrandMark")
         mark.setAlignment(Qt.AlignCenter)
-        mark.setFixedSize(34, 34)
+        mark.setFixedSize(40, 40)
+        mark.setPixmap(make_logo_pixmap(40))
         layout.addWidget(mark)
 
         text_layout = QVBoxLayout()
@@ -1237,6 +1408,19 @@ class MainWindow(QMainWindow):
         version_badge = QLabel(f"v{APP_VERSION}")
         version_badge.setObjectName("HeaderBadge")
         layout.addWidget(version_badge)
+
+        overflow_menu = QMenu(self)
+        overflow_menu.addAction(self.about_action)
+        self.more_btn = QToolButton()
+        self.more_btn.setObjectName("IconButton")
+        self.more_btn.setIcon(make_more_icon())
+        self.more_btn.setIconSize(QSize(20, 20))
+        self.more_btn.setFixedSize(36, 36)
+        self.more_btn.setCursor(Qt.PointingHandCursor)
+        self.more_btn.setPopupMode(QToolButton.InstantPopup)
+        self.more_btn.setMenu(overflow_menu)
+        self.more_btn.setToolTip("О программе")
+        layout.addWidget(self.more_btn)
         return header
 
     def _build_stats(self) -> QWidget:
@@ -1292,7 +1476,7 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.cert_combo, 0, 1, 1, 3)
 
         self.refresh_btn = QPushButton()
-        self.refresh_btn.setObjectName("Secondary")
+        self.refresh_btn.setObjectName("IconTonal")
         self.refresh_btn.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.refresh_btn.setIconSize(QSize(14, 14))
         self.refresh_btn.setCursor(Qt.PointingHandCursor)
@@ -1314,7 +1498,7 @@ class MainWindow(QMainWindow):
         self.pin_edit.returnPressed.connect(self.start_signing)
 
         self.eye_btn = QPushButton()
-        self.eye_btn.setObjectName("EyeButton")
+        self.eye_btn.setObjectName("IconTonal")
         self.eye_btn.setCheckable(True)
         self.eye_btn.setCursor(Qt.PointingHandCursor)
         self.eye_btn.setFixedSize(30, 30)
@@ -1337,7 +1521,7 @@ class MainWindow(QMainWindow):
             )
 
         self.forget_btn = QPushButton("Забыть")
-        self.forget_btn.setObjectName("Link")
+        self.forget_btn.setObjectName("TextDanger")
         self.forget_btn.setCursor(Qt.PointingHandCursor)
         self.forget_btn.setToolTip("Удалить сохранённый PIN и очистить поле")
         self.forget_btn.clicked.connect(self._forget_pin)
@@ -1377,7 +1561,7 @@ class MainWindow(QMainWindow):
         row.addWidget(self.btn_sign)
 
         self.btn_stop = QPushButton("Остановить")
-        self.btn_stop.setObjectName("Danger")
+        self.btn_stop.setObjectName("OutlinedDanger")
         self.btn_stop.setCursor(Qt.PointingHandCursor)
         self.btn_stop.setMinimumHeight(36)
         self.btn_stop.setEnabled(False)
@@ -1422,13 +1606,13 @@ class MainWindow(QMainWindow):
         header.addStretch(1)
 
         self.copy_btn = QPushButton("Копировать")
-        self.copy_btn.setObjectName("Ghost")
+        self.copy_btn.setObjectName("Text")
         self.copy_btn.setCursor(Qt.PointingHandCursor)
         self.copy_btn.clicked.connect(self._copy_log)
         header.addWidget(self.copy_btn)
 
         self.clear_btn = QPushButton("Очистить")
-        self.clear_btn.setObjectName("Ghost")
+        self.clear_btn.setObjectName("Text")
         self.clear_btn.setCursor(Qt.PointingHandCursor)
         self.clear_btn.clicked.connect(self._clear_log)
         header.addWidget(self.clear_btn)
@@ -1954,7 +2138,12 @@ def main() -> int:
     app.setApplicationName(APP_NAME)
     app.setApplicationDisplayName(APP_DISPLAY_NAME)
     app.setOrganizationName("Tripswarlock")
-    app.setFont(QFont("DejaVu Sans", 10))
+    families = set(QFontDatabase().families())
+    font_family = next(
+        (name for name in ("Roboto", "Noto Sans", "DejaVu Sans") if name in families),
+        "DejaVu Sans",
+    )
+    app.setFont(QFont(font_family, 10))
     app.setWindowIcon(make_app_icon())
 
     window = MainWindow()
